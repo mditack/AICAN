@@ -131,39 +131,79 @@
 /* ── Animations ── */
 
 @keyframes pulse-bar-1 {
-  0%, 100% { transform: scaleY(0.35); }
-  50% { transform: scaleY(1); }
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 @keyframes pulse-bar-2 {
-  0%, 100% { transform: scaleY(0.5); }
-  50% { transform: scaleY(0.8); }
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(0.8);
+  }
 }
 @keyframes pulse-bar-3 {
-  0%, 100% { transform: scaleY(0.6); }
-  50% { transform: scaleY(1); }
+  0%,
+  100% {
+    transform: scaleY(0.6);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 @keyframes pulse-bar-4 {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(0.9); }
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(0.9);
+  }
 }
 @keyframes pulse-bar-5 {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(0.75); }
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(0.75);
+  }
 }
 
 @keyframes orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes shimmer-slide {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.08); }
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
 }
 
 @layer base {
@@ -205,12 +245,24 @@
   border-radius: 9999px;
   background: var(--brand);
 }
-.welcome-bars .bar:nth-child(1) { animation: pulse-bar-1 1.8s ease-in-out infinite; }
-.welcome-bars .bar:nth-child(2) { animation: pulse-bar-2 1.4s ease-in-out infinite 0.1s; }
-.welcome-bars .bar:nth-child(3) { animation: pulse-bar-3 1.6s ease-in-out infinite 0.2s; }
-.welcome-bars .bar:nth-child(4) { animation: pulse-bar-4 1.5s ease-in-out infinite 0.15s; }
-.welcome-bars .bar:nth-child(5) { animation: pulse-bar-5 1.7s ease-in-out infinite 0.25s; }
-.welcome-bars .bar:nth-child(6) { animation: pulse-bar-1 1.9s ease-in-out infinite 0.3s; }
+.welcome-bars .bar:nth-child(1) {
+  animation: pulse-bar-1 1.8s ease-in-out infinite;
+}
+.welcome-bars .bar:nth-child(2) {
+  animation: pulse-bar-2 1.4s ease-in-out infinite 0.1s;
+}
+.welcome-bars .bar:nth-child(3) {
+  animation: pulse-bar-3 1.6s ease-in-out infinite 0.2s;
+}
+.welcome-bars .bar:nth-child(4) {
+  animation: pulse-bar-4 1.5s ease-in-out infinite 0.15s;
+}
+.welcome-bars .bar:nth-child(5) {
+  animation: pulse-bar-5 1.7s ease-in-out infinite 0.25s;
+}
+.welcome-bars .bar:nth-child(6) {
+  animation: pulse-bar-1 1.9s ease-in-out infinite 0.3s;
+}
 
 /* ── Visualizer glow ── */
 .visualizer-glow {

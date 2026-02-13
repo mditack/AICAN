@@ -1,6 +1,7 @@
 # AICAN Agent (Gemini 2.5 Flash Native Audio)
 
 Voice agent using **Gemini 2.5 Flash Native Audio** with:
+
 - **Model:** `gemini-2.5-flash-native-audio-preview-12-2025`
 - **Voice:** Enceladus
 - **Language:** Indonesian (`id-ID`)

@@ -68,7 +68,7 @@ export function useAgentAudioVisualizerGridAnimator(
   rows: number,
   columns: number,
   interval: number,
-  radius?: number,
+  radius?: number
 ): Coordinate {
   const [index, setIndex] = useState(0);
   const [sequence, setSequence] = useState<Coordinate[]>(() => [

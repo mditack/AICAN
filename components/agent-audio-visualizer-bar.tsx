@@ -1,13 +1,13 @@
 'use client';
 
 import React, {
+  type CSSProperties,
+  Children,
   type ComponentProps,
   type ReactNode,
-  type CSSProperties,
-  useMemo,
-  Children,
   cloneElement,
   isValidElement,
+  useMemo,
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { type LocalAudioTrack, type RemoteAudioTrack } from 'livekit-client';
@@ -22,7 +22,7 @@ import { cn } from '@/lib/shadcn/utils';
 function cloneSingleChild(
   children: ReactNode | ReactNode[],
   props?: Record<string, unknown>,
-  key?: unknown,
+  key?: unknown
 ) {
   return Children.map(children, (child) => {
     // Checking isValidElement is the safe way and avoids a typescript error too.
@@ -62,7 +62,7 @@ export const AgentAudioVisualizerBarVariants = cva(
     defaultVariants: {
       size: 'md',
     },
-  },
+  }
 );
 
 /**
@@ -163,12 +163,12 @@ export function AgentAudioVisualizerBar({
   const highlightedIndices = useAgentAudioVisualizerBarAnimator(
     state,
     _barCount,
-    sequencerInterval,
+    sequencerInterval
   );
 
   const bands = useMemo(
     () => (state === 'speaking' ? volumeBands : new Array(_barCount).fill(0)),
-    [state, volumeBands, _barCount],
+    [state, volumeBands, _barCount]
   );
 
   return (
@@ -189,7 +189,7 @@ export function AgentAudioVisualizerBar({
             data-lk-highlighted={highlightedIndices.includes(idx)}
             style={{ height: `${band * 100}%` }}
           />
-        ),
+        )
       )}
     </div>
   );

@@ -25,7 +25,7 @@ function generateListeningSequenceBar(columns: number): number[][] {
 export const useAgentAudioVisualizerRadialAnimator = (
   state: AgentState | undefined,
   barCount: number,
-  interval: number,
+  interval: number
 ): number[] => {
   const [index, setIndex] = useState(0);
   const [sequence, setSequence] = useState<number[][]>([[]]);

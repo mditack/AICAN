@@ -41,7 +41,7 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   agentName:
     typeof process.env.NEXT_PUBLIC_AGENT_NAME === 'string'
       ? process.env.NEXT_PUBLIC_AGENT_NAME
-      : process.env.AGENT_NAME ?? undefined,
+      : (process.env.AGENT_NAME ?? undefined),
 
   // LiveKit Cloud Sandbox configuration
   sandboxId: undefined,

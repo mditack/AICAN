@@ -8,8 +8,8 @@ import {
   type TrackReferenceOrPlaceholder,
   useMultibandTrackVolume,
 } from '@livekit/components-react';
-import { cn } from '@/lib/shadcn/utils';
 import { useAgentAudioVisualizerRadialAnimator } from '@/hooks/agents-ui/use-agent-audio-visualizer-radial';
+import { cn } from '@/lib/shadcn/utils';
 
 export const AgentAudioVisualizerRadialVariants = cva(
   [
@@ -35,7 +35,7 @@ export const AgentAudioVisualizerRadialVariants = cva(
     defaultVariants: {
       size: 'md',
     },
-  },
+  }
 );
 
 /**
@@ -160,11 +160,11 @@ export function AgentAudioVisualizerRadial({
   const highlightedIndices = useAgentAudioVisualizerRadialAnimator(
     state,
     _barCount,
-    sequencerInterval,
+    sequencerInterval
   );
   const bands = useMemo(
     () => (audioTrack ? volumeBands : new Array(_barCount).fill(0)),
-    [audioTrack, volumeBands, _barCount],
+    [audioTrack, volumeBands, _barCount]
   );
 
   const dotSize = useMemo(() => {

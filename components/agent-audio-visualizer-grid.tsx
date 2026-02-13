@@ -1,14 +1,14 @@
 'use client';
 
 import React, {
-  type ReactNode,
   type CSSProperties,
-  memo,
-  useMemo,
   Children,
+  type ComponentProps,
+  type ReactNode,
   cloneElement,
   isValidElement,
-  type ComponentProps,
+  memo,
+  useMemo,
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { LocalAudioTrack, RemoteAudioTrack } from 'livekit-client';
@@ -17,16 +17,16 @@ import {
   type TrackReferenceOrPlaceholder,
   useMultibandTrackVolume,
 } from '@livekit/components-react';
-import { cn } from '@/lib/shadcn/utils';
 import {
   type Coordinate,
   useAgentAudioVisualizerGridAnimator,
 } from '@/hooks/agents-ui/use-agent-audio-visualizer-grid';
+import { cn } from '@/lib/shadcn/utils';
 
 function cloneSingleChild(
   children: ReactNode | ReactNode[],
   props?: Record<string, unknown>,
-  key?: unknown,
+  key?: unknown
 ) {
   return Children.map(children, (child) => {
     // Checking isValidElement is the safe way and avoids a typescript error too.
@@ -66,7 +66,7 @@ export const AgentAudioVisualizerGridVariants = cva(
     defaultVariants: {
       size: 'md',
     },
-  },
+  }
 );
 
 /**
@@ -118,7 +118,7 @@ const sizeDefaults = {
 function useGrid(
   size: VariantProps<typeof AgentAudioVisualizerGridVariants>['size'] = 'md',
   columnCount = sizeDefaults[size as keyof typeof sizeDefaults],
-  rowCount = sizeDefaults[size as keyof typeof sizeDefaults],
+  rowCount = sizeDefaults[size as keyof typeof sizeDefaults]
 ) {
   return useMemo(() => {
     const _columnCount = columnCount;
@@ -256,7 +256,7 @@ export function AgentAudioVisualizerGrid({
     rowCount,
     columnCount,
     interval,
-    radius,
+    radius
   );
   const volumeBands = useMultibandTrackVolume(audioTrack, {
     bands: columnCount,

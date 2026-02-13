@@ -1,12 +1,12 @@
-import { Fragment, type ComponentProps } from 'react';
+import { type ComponentProps, Fragment } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { Track } from 'livekit-client';
 import {
+  LoaderIcon,
   MicIcon,
   MicOffIcon,
-  MonitorUpIcon,
   MonitorOffIcon,
-  LoaderIcon,
+  MonitorUpIcon,
   VideoIcon,
   VideoOffIcon,
 } from 'lucide-react';
@@ -141,7 +141,7 @@ export function AgentTrackToggle({
           size,
           variant: variant ?? 'default',
           className,
-        }),
+        })
       )}
       {...props}
     >

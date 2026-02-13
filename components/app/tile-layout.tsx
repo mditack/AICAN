@@ -130,7 +130,7 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                 >
                   {/* Glow ring behind visualizer when centered */}
                   {!chatOpen && (
-                    <div className="absolute inset-0 -z-10 animate-[glow-pulse_3s_ease-in-out_infinite] rounded-xl bg-brand-glow blur-xl" />
+                    <div className="bg-brand-glow absolute inset-0 -z-10 animate-[glow-pulse_3s_ease-in-out_infinite] rounded-xl blur-xl" />
                   )}
                   <AgentAudioVisualizerBar
                     barCount={5}
@@ -142,7 +142,7 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                       className={cn([
                         'bg-muted min-h-3 w-3 rounded-full',
                         'origin-center transition-all duration-300 ease-out',
-                        'data-[lk-highlighted=true]:bg-brand data-[lk-highlighted=true]:shadow-[0_0_8px_var(--brand-glow)] data-[lk-muted=true]:bg-muted',
+                        'data-[lk-highlighted=true]:bg-brand data-[lk-muted=true]:bg-muted data-[lk-highlighted=true]:shadow-[0_0_8px_var(--brand-glow)]',
                       ])}
                     />
                   </AgentAudioVisualizerBar>

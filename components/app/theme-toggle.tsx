@@ -11,11 +11,7 @@ interface ThemeToggleProps {
   bordered?: boolean;
 }
 
-export function ThemeToggle({
-  className,
-  showSystem = true,
-  bordered = true,
-}: ThemeToggleProps) {
+export function ThemeToggle({ className, showSystem = true, bordered = true }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -35,7 +31,7 @@ export function ThemeToggle({
     <div
       className={cn(
         'text-foreground relative flex flex-row items-center justify-end gap-0.5 overflow-hidden rounded-full p-1',
-        bordered && 'bg-secondary/60 border border-border/50',
+        bordered && 'bg-secondary/60 border-border/50 border',
         !bordered && 'bg-secondary/40',
         className
       )}

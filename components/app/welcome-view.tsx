@@ -89,17 +89,14 @@ export const WelcomeView = ({
           variants={staggerItem}
           size="lg"
           onClick={onStartCall}
-          className="mt-8 w-64 cursor-pointer rounded-full bg-brand font-mono text-xs font-bold tracking-wider text-white uppercase shadow-lg shadow-brand-glow transition-all duration-300 hover:scale-105 hover:bg-brand-light hover:shadow-xl hover:shadow-brand-glow"
+          className="bg-brand shadow-brand-glow hover:bg-brand-light hover:shadow-brand-glow mt-8 w-64 cursor-pointer rounded-full font-mono text-xs font-bold tracking-wider text-white uppercase shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
         >
           <Microphone weight="bold" className="mr-1 size-4" />
           {startButtonText}
         </MotionButton>
 
         {/* Subtle hint */}
-        <motion.p
-          variants={staggerItem}
-          className="text-muted-foreground/60 mt-6 text-xs"
-        >
+        <motion.p variants={staggerItem} className="text-muted-foreground/60 mt-6 text-xs">
           Tekan untuk memulai sesi suara
         </motion.p>
       </motion.section>
