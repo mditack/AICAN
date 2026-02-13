@@ -256,7 +256,7 @@ export function AgentControlBar({
   const publishPermissions = usePublishPermissions();
   const [isChatOpenUncontrolled, setIsChatOpenUncontrolled] = useState(isChatOpen);
   const {
-    microphoneTrack,
+    micTrackRef,    // was: microphoneTrack
     cameraToggle,
     microphoneToggle,
     screenShareToggle,
@@ -319,7 +319,7 @@ export function AgentControlBar({
               source={Track.Source.Microphone}
               pressed={microphoneToggle.enabled}
               disabled={microphoneToggle.pending}
-              audioTrack={microphoneTrack}
+              audioTrack={micTrackRef}    // was: audioTrack={microphoneTrack}
               onPressedChange={microphoneToggle.toggle}
               onActiveDeviceChange={handleAudioDeviceChange}
               onMediaDeviceError={handleMicrophoneDeviceSelectError}
