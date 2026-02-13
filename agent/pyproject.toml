@@ -1,0 +1,14 @@
+[project]
+name = "aican-agent"
+version = "0.1.0"
+description = "AICAN voice agent with Gemini 2.5 Flash Native Audio (id-ID)"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "livekit-agents[google]~=1.3",
+    "livekit-plugins-noise-cancellation~=0.2",
+    "python-dotenv",
+]
+
+[tool.uv]
+dev-dependencies = []
