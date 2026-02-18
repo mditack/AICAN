@@ -71,9 +71,11 @@ export function useLocalTrackRef(source: Track.Source) {
 
 interface TileLayoutProps {
   chatOpen: boolean;
+  /** When false, show audio visualizer even if agent has video (avatar). Default true. */
+  showAgentVideo?: boolean;
 }
 
-export function TileLayout({ chatOpen }: TileLayoutProps) {
+export function TileLayout({ chatOpen, showAgentVideo = true }: TileLayoutProps) {
   const {
     state: agentState,
     audioTrack: agentAudioTrack,
@@ -87,7 +89,7 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
   const hasSecondTile = isCameraEnabled || isScreenShareEnabled;
 
   const animationDelay = chatOpen ? 0 : 0.15;
-  const isAvatar = agentVideoTrack !== undefined;
+  const isAvatar = showAgentVideo && agentVideoTrack !== undefined;
   const videoWidth = agentVideoTrack?.publication.dimensions?.width ?? 0;
   const videoHeight = agentVideoTrack?.publication.dimensions?.height ?? 0;
 

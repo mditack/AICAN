@@ -92,6 +92,7 @@ export const SessionView = ({
   const session = useSessionContext();
   const { messages } = useSessionMessages(session);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showAgentVideo, setShowAgentVideo] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Track whether the agent's introduction has been delivered.
@@ -112,6 +113,7 @@ export const SessionView = ({
     chat: introComplete && appConfig.supportsChatInput,
     camera: appConfig.supportsVideoInput,
     screenShare: appConfig.supportsScreenShare,
+    avatar: true,
   };
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export const SessionView = ({
         className="space-y-3 transition-opacity duration-300 ease-out"
       />
       {/* Tile layout */}
-      <TileLayout chatOpen={chatOpen} />
+      <TileLayout chatOpen={chatOpen} showAgentVideo={showAgentVideo} />
       {/* Bottom */}
       <MotionBottom
         {...BOTTOM_VIEW_MOTION_PROPS}
@@ -166,6 +168,8 @@ export const SessionView = ({
             isConnected={session.isConnected}
             onDisconnect={session.end}
             onIsChatOpenChange={setChatOpen}
+            avatarEnabled={showAgentVideo}
+            onAvatarEnabledChange={setShowAgentVideo}
           />
         </div>
       </MotionBottom>

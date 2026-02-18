@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Microphone } from '@phosphor-icons/react';
+import { Microphone, UserCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
 
 const MotionButton = motion.create(Button);
 
@@ -48,13 +50,21 @@ const staggerItem = {
 interface WelcomeViewProps {
   startButtonText: string;
   onStartCall: () => void;
+  avatarEnabledRef: React.MutableRefObject<boolean>;
 }
 
 export const WelcomeView = ({
   startButtonText,
   onStartCall,
+  avatarEnabledRef,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
+  const [avatarEnabled, setAvatarEnabled] = useState(true);
+
+  useEffect(() => {
+    avatarEnabledRef.current = avatarEnabled;
+  }, [avatarEnabled, avatarEnabledRef]);
+
   return (
     <div ref={ref} className="welcome-gradient">
       <motion.section
@@ -83,6 +93,19 @@ export const WelcomeView = ({
         >
           Mulai percakapan dengan AI companion Anda
         </motion.p>
+
+        {/* Enable avatar toggle */}
+        <motion.div variants={staggerItem} className="mt-6 flex items-center gap-2">
+          <Toggle
+            pressed={avatarEnabled}
+            onPressedChange={setAvatarEnabled}
+            aria-label="Tampilkan avatar"
+            className="border-input data-[state=on]:bg-primary/20"
+          >
+            <UserCircle weight={avatarEnabled ? 'fill' : 'regular'} className="mr-1.5 size-4" />
+            <span className="text-muted-foreground text-sm">Tampilkan avatar</span>
+          </Toggle>
+        </motion.div>
 
         {/* CTA Button */}
         <MotionButton

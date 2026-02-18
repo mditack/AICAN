@@ -90,12 +90,20 @@ export function getStyles(appConfig: AppConfig) {
     .join('\n');
 }
 
+export type ConnectionOptions = {
+  avatarEnabled?: boolean;
+};
+
 /**
  * Get a token source for a sandboxed LiveKit session
  * @param appConfig - The app configuration
+ * @param getOptions - Optional callback returning connection options (e.g. avatarEnabled)
  * @returns A token source for a sandboxed LiveKit session
  */
-export function getSandboxTokenSource(appConfig: AppConfig) {
+export function getSandboxTokenSource(
+  appConfig: AppConfig,
+  getOptions?: () => ConnectionOptions
+) {
   return TokenSource.custom(async () => {
     const url = new URL(process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT!, window.location.origin);
     const sandboxId = appConfig.sandboxId ?? '';
@@ -104,6 +112,7 @@ export function getSandboxTokenSource(appConfig: AppConfig) {
           agents: [{ agent_name: appConfig.agentName }],
         }
       : undefined;
+    const options = getOptions?.() ?? {};
 
     try {
       const res = await fetch(url.toString(), {
@@ -114,8 +123,45 @@ export function getSandboxTokenSource(appConfig: AppConfig) {
         },
         body: JSON.stringify({
           room_config: roomConfig,
+          avatar_enabled: options.avatarEnabled,
         }),
       });
+      return await res.json();
+    } catch (error) {
+      console.error('Error fetching connection details:', error);
+      throw new Error('Error fetching connection details!');
+    }
+  });
+}
+
+/**
+ * Get a token source that POSTs to the local /api/connection-details endpoint
+ * @param appConfig - The app configuration
+ * @param getOptions - Optional callback returning connection options (e.g. avatarEnabled)
+ * @returns A token source for a LiveKit session
+ */
+export function getLocalConnectionTokenSource(
+  appConfig: AppConfig,
+  getOptions?: () => ConnectionOptions
+) {
+  return TokenSource.custom(async () => {
+    const options = getOptions?.() ?? {};
+    const body: Record<string, unknown> = {
+      avatar_enabled: options.avatarEnabled,
+    };
+    if (appConfig.agentName) {
+      body.room_config = { agents: [{ agent_name: appConfig.agentName }] };
+    }
+    try {
+      const res = await fetch('/api/connection-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || res.statusText);
+      }
       return await res.json();
     } catch (error) {
       console.error('Error fetching connection details:', error);

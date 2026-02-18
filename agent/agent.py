@@ -2,9 +2,10 @@
 AICAN voice agent using Gemini 2.5 Flash Native Audio (Indonesian).
 Deploy to LiveKit Cloud with: lk agent create
 """
-import argparse
+import asyncio
+import json
+import logging
 import os
-import sys
 
 from dotenv import load_dotenv
 from livekit import agents, rtc
@@ -13,10 +14,24 @@ from livekit.plugins import google, noise_cancellation, bey
 from livekit.plugins.google.realtime import RealtimeModel
 from prompts import AGENT_PROMPT, SESSION_PROMPT
 
+logger = logging.getLogger(__name__)
 load_dotenv(".env.local")
 
 # Must match NEXT_PUBLIC_AGENT_NAME / AGENT_NAME in the frontend .env.local (e.g. AICAN)
 AGENT_NAME = os.getenv("AGENT_NAME", "")
+
+
+def _avatar_enabled_for_room(ctx: agents.JobContext) -> bool:
+    """Read avatarEnabled from first participant's token metadata (default True)."""
+    for p in ctx.room.remote_participants.values():
+        if not p.metadata:
+            return True
+        try:
+            data = json.loads(p.metadata)
+            return data.get("avatarEnabled", True)
+        except (json.JSONDecodeError, TypeError):
+            return True
+    return True
 
 
 class Assistant(Agent):
@@ -53,11 +68,23 @@ async def my_agent(ctx: agents.JobContext):
         ),
     )
 
-    avatar = bey.AvatarSession(
-        avatar_id=os.getenv("BEY_AVATAR_ID"),
-    )
-    # Start the avatar and wait for it to join
-    await avatar.start(session, room=ctx.room)
+    # Optional Bey avatar: only if enabled by user and BEY_AVATAR_ID is set
+    avatar_enabled = _avatar_enabled_for_room(ctx)
+    bey_avatar_id = os.getenv("BEY_AVATAR_ID")
+    if avatar_enabled and bey_avatar_id:
+        livekit_url = os.getenv("LIVEKIT_URL", "")
+        if livekit_url.startswith("https://"):
+            os.environ["LIVEKIT_URL"] = livekit_url.replace("https://", "wss://", 1)
+        try:
+            avatar = bey.AvatarSession(avatar_id=bey_avatar_id)
+            await asyncio.wait_for(
+                avatar.start(session, room=ctx.room),
+                timeout=20.0,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Bey avatar start timed out; continuing without avatar")
+        except Exception as e:
+            logger.warning("Bey avatar failed; continuing without avatar: %s", e)
 
     # Ignore all user audio/text input while the agent delivers its introduction
     session.input.set_audio_enabled(False)

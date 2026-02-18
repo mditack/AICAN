@@ -29,9 +29,12 @@ export async function POST(req: Request) {
       throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
-    // Parse agent configuration from request body
+    // Parse agent configuration and avatar preference from request body
     const body = await req.json();
-    const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const agentName: string | undefined =
+      body?.room_config?.agents?.[0]?.agent_name ?? body?.agentName;
+    const avatarEnabled =
+      body?.avatar_enabled !== undefined ? body.avatar_enabled : body?.avatarEnabled !== false;
 
     // Generate participant token
     const participantName = 'user';
@@ -41,7 +44,8 @@ export async function POST(req: Request) {
     const participantToken = await createParticipantToken(
       { identity: participantIdentity, name: participantName },
       roomName,
-      agentName
+      agentName,
+      avatarEnabled
     );
 
     // Return connection details
@@ -66,12 +70,15 @@ export async function POST(req: Request) {
 function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
-  agentName?: string
+  agentName?: string,
+  avatarEnabled: boolean = true
 ): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, {
     ...userInfo,
     ttl: '15m',
   });
+  at.metadata = JSON.stringify({ avatarEnabled });
+
   const grant: VideoGrant = {
     room: roomName,
     roomJoin: true,

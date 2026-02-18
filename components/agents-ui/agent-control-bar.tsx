@@ -2,7 +2,7 @@
 
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { Track } from 'livekit-client';
-import { Loader, MessageSquareTextIcon, SendHorizontal } from 'lucide-react';
+import { Loader, MessageSquareTextIcon, SendHorizontal, UserCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useChat } from '@livekit/components-react';
 import { AgentDisconnectButton } from '@/components/agents-ui/agent-disconnect-button';
@@ -151,6 +151,11 @@ export interface AgentControlBarControls {
    * @defaultValue true (if data publish permission is granted)
    */
   chat?: boolean;
+  /**
+   * Whether to show the avatar visibility toggle (show/hide agent video).
+   * @defaultValue false
+   */
+  avatar?: boolean;
 }
 
 export interface AgentControlBarProps extends UseInputControlsProps {
@@ -200,6 +205,14 @@ export interface AgentControlBarProps extends UseInputControlsProps {
    * The callback for when a device error occurs.
    */
   onDeviceError?: (error: { source: Track.Source; error: Error }) => void;
+  /**
+   * Whether the agent avatar (video) is visible. Used with the avatar toggle.
+   */
+  avatarEnabled?: boolean;
+  /**
+   * Callback when the user toggles agent avatar visibility.
+   */
+  onAvatarEnabledChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -234,6 +247,8 @@ export function AgentControlBar({
   onDisconnect,
   onDeviceError,
   onIsChatOpenChange,
+  avatarEnabled = true,
+  onAvatarEnabledChange,
   className,
   ...props
 }: AgentControlBarProps & ComponentProps<'div'>) {
@@ -261,6 +276,7 @@ export function AgentControlBar({
     screenShare: controls?.screenShare ?? publishPermissions.screenShare,
     camera: controls?.camera ?? publishPermissions.camera,
     chat: controls?.chat ?? publishPermissions.data,
+    avatar: controls?.avatar ?? false,
   };
 
   const isEmpty = Object.values(visibleControls).every((value) => !value);
@@ -368,6 +384,22 @@ export function AgentControlBar({
               })}
             >
               <MessageSquareTextIcon />
+            </Toggle>
+          )}
+
+          {/* Toggle Avatar visibility */}
+          {visibleControls.avatar && onAvatarEnabledChange && (
+            <Toggle
+              variant={variant === 'outline' ? 'outline' : 'default'}
+              pressed={avatarEnabled}
+              aria-label="Toggle avatar"
+              onPressedChange={onAvatarEnabledChange}
+              className={agentTrackToggleVariants({
+                variant: variant === 'outline' ? 'outline' : 'default',
+                className: cn(variant === 'livekit' && [TOGGLE_VARIANT_2, 'rounded-full']),
+              })}
+            >
+              <UserCircle className={cn('size-4', avatarEnabled && 'fill-current')} />
             </Toggle>
           )}
         </div>
