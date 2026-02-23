@@ -100,10 +100,7 @@ export type ConnectionOptions = {
  * @param getOptions - Optional callback returning connection options (e.g. avatarEnabled)
  * @returns A token source for a sandboxed LiveKit session
  */
-export function getSandboxTokenSource(
-  appConfig: AppConfig,
-  getOptions?: () => ConnectionOptions
-) {
+export function getSandboxTokenSource(appConfig: AppConfig, getOptions?: () => ConnectionOptions) {
   return TokenSource.custom(async () => {
     const url = new URL(process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT!, window.location.origin);
     const sandboxId = appConfig.sandboxId ?? '';

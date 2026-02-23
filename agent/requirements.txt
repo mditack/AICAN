@@ -5,6 +5,7 @@ livekit-plugins-google
 livekit-plugins-noise-cancellation
 livekit-plugins-turn-detector
 livekit-plugins-bey
+livekit-plugins-simli
 mem0ai
 duckduckgo-search
 langchain_community

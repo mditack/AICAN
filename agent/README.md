@@ -74,7 +74,10 @@ Ensure the React app (from repo root) uses the same LiveKit project and that `AG
    - Or in `app-config.ts`, set `agentName` to that value.
 
 4. **Secrets on LiveKit Cloud**  
-   Add `GOOGLE_API_KEY` in the Cloud dashboard (Project → Settings → Secrets) so the deployed agent can call Gemini.
+   Add these in the Cloud dashboard (Project → Settings → Secrets) or via `lk agent update-secrets`:
+   - `GOOGLE_API_KEY` — required for Gemini.
+   - For **Simli avatar**: `SIMLI_API_KEY` and `SIMLI_FACE_ID` (get key from [app.simli.com/apikey](https://app.simli.com/apikey), face ID from [Simli faces](https://app.simli.com/create/from-existing)). If either is missing, the agent runs without avatar.  
+     **If you see "401 Unauthorized" in logs:** the Simli API rejected the key — use a valid API key from the Simli dashboard, ensure the secret name is exactly `SIMLI_API_KEY`, and that the value has no leading/trailing spaces.
 
 ## Useful commands
 
