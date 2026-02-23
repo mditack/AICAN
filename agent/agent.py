@@ -7,6 +7,7 @@ import json
 import logging
 import os
 
+import requests
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import AgentServer, AgentSession, Agent, room_io
@@ -20,6 +21,27 @@ load_dotenv(".env.local")
 
 # Must match NEXT_PUBLIC_AGENT_NAME / AGENT_NAME in the frontend .env.local (e.g. AICAN)
 AGENT_NAME = os.getenv("AGENT_NAME", "")
+
+# Optional: URL of the Next.js app's prompts API (e.g. https://your-app.vercel.app/api/prompts).
+# If set, the agent loads prompts from this URL at session start; otherwise uses prompts.py.
+PROMPTS_API_URL = os.getenv("PROMPTS_API_URL", "")
+
+
+def _fetch_prompts_from_api() -> tuple[str, str] | None:
+    """Fetch agent and session prompts from the API. Returns (agent_prompt, session_prompt) or None on failure."""
+    if not PROMPTS_API_URL or not PROMPTS_API_URL.startswith("http"):
+        return None
+    try:
+        r = requests.get(PROMPTS_API_URL, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        agent = data.get("agentPrompt")
+        session = data.get("sessionPrompt")
+        if isinstance(agent, str) and isinstance(session, str):
+            return (agent, session)
+    except Exception as e:
+        logger.warning("Failed to fetch prompts from API (%s), using defaults: %s", PROMPTS_API_URL, e)
+    return None
 
 
 def _avatar_enabled_for_room(ctx: agents.JobContext) -> bool:
@@ -36,10 +58,8 @@ def _avatar_enabled_for_room(ctx: agents.JobContext) -> bool:
 
 
 class Assistant(Agent):
-    def __init__(self) -> None:
-        super().__init__(
-            instructions=AGENT_PROMPT,
-        )
+    def __init__(self, instructions: str) -> None:
+        super().__init__(instructions=instructions)
 
 
 server = AgentServer()
@@ -47,6 +67,11 @@ server = AgentServer()
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def my_agent(ctx: agents.JobContext):
+    # Load prompts from API if PROMPTS_API_URL is set, otherwise use prompts.py
+    fetched = await asyncio.to_thread(_fetch_prompts_from_api)
+    agent_prompt = fetched[0] if fetched else AGENT_PROMPT
+    session_prompt = fetched[1] if fetched else SESSION_PROMPT
+
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-2.5-flash-native-audio-preview-12-2025",
@@ -108,7 +133,7 @@ async def my_agent(ctx: agents.JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=Assistant(),
+        agent=Assistant(instructions=agent_prompt),
         room_options=room_io.RoomOptions(
             #video_input=video_enabled,  # Enable only when image deps are available
             text_input=True,  # Explicitly enable text input to handle 'lk.chat' streams
@@ -124,7 +149,7 @@ async def my_agent(ctx: agents.JobContext):
     session.input.set_audio_enabled(False)
 
     intro_handle = session.generate_reply(
-        instructions=SESSION_PROMPT,
+        instructions=session_prompt,
         allow_interruptions=False,
     )
     await intro_handle  # wait for the introduction to fully play out
