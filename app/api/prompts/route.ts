@@ -29,7 +29,11 @@ export async function GET() {
       } satisfies StoredPrompts & { source: string });
     }
     const stored = await redis.get<StoredPrompts>(REDIS_KEY);
-    if (!stored || typeof stored?.agentPrompt !== 'string' || typeof stored?.sessionPrompt !== 'string') {
+    if (
+      !stored ||
+      typeof stored?.agentPrompt !== 'string' ||
+      typeof stored?.sessionPrompt !== 'string'
+    ) {
       return NextResponse.json({
         agentPrompt: DEFAULT_AGENT_PROMPT,
         sessionPrompt: DEFAULT_SESSION_PROMPT,
@@ -42,10 +46,7 @@ export async function GET() {
     } satisfies StoredPrompts & { source: string });
   } catch (error) {
     console.error('GET /api/prompts:', error);
-    return NextResponse.json(
-      { error: 'Failed to load prompts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to load prompts' }, { status: 500 });
   }
 }
 
@@ -55,15 +56,16 @@ export async function POST(req: Request) {
     const redis = getRedis();
     if (!redis) {
       return NextResponse.json(
-        { error: 'Upstash Redis not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.' },
+        {
+          error:
+            'Upstash Redis not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.',
+        },
         { status: 503 }
       );
     }
     const body = await req.json();
-    const agentPrompt =
-      typeof body?.agentPrompt === 'string' ? body.agentPrompt : undefined;
-    const sessionPrompt =
-      typeof body?.sessionPrompt === 'string' ? body.sessionPrompt : undefined;
+    const agentPrompt = typeof body?.agentPrompt === 'string' ? body.agentPrompt : undefined;
+    const sessionPrompt = typeof body?.sessionPrompt === 'string' ? body.sessionPrompt : undefined;
     if (agentPrompt === undefined && sessionPrompt === undefined) {
       return NextResponse.json(
         { error: 'Provide at least one of agentPrompt or sessionPrompt' },
@@ -82,9 +84,6 @@ export async function POST(req: Request) {
     return NextResponse.json(next);
   } catch (error) {
     console.error('POST /api/prompts:', error);
-    return NextResponse.json(
-      { error: 'Failed to save prompts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save prompts' }, { status: 500 });
   }
 }

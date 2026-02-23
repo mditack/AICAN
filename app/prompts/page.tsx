@@ -27,7 +27,10 @@ export default function PromptsPage() {
       setAgentPrompt(data.agentPrompt ?? '');
       setSessionPrompt(data.sessionPrompt ?? '');
     } catch (e) {
-      setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Failed to load prompts' });
+      setMessage({
+        type: 'error',
+        text: e instanceof Error ? e.message : 'Failed to load prompts',
+      });
     } finally {
       setLoading(false);
     }
@@ -48,7 +51,10 @@ export default function PromptsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? 'Failed to save');
-      setMessage({ type: 'success', text: 'Prompts saved. The agent will use these on the next session.' });
+      setMessage({
+        type: 'success',
+        text: 'Prompts saved. The agent will use these on the next session.',
+      });
     } catch (e) {
       setMessage({
         type: 'error',
@@ -61,30 +67,30 @@ export default function PromptsPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background px-4 py-20">
-        <SpinnerGap className="size-10 animate-spin text-muted-foreground" weight="bold" />
+      <main className="bg-background flex min-h-svh flex-col items-center justify-center gap-4 px-4 py-20">
+        <SpinnerGap className="text-muted-foreground size-10 animate-spin" weight="bold" />
         <p className="text-muted-foreground">Loading prompts…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-svh bg-background px-4 py-20 pt-24 md:px-6">
+    <main className="bg-background min-h-svh px-4 py-20 pt-24 md:px-6">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-foreground transition-colors hover:bg-accent"
+              className="border-border bg-card text-foreground hover:bg-accent flex size-10 items-center justify-center rounded-lg border transition-colors"
               aria-label="Back to home"
             >
               <ArrowLeft className="size-5" weight="bold" />
             </Link>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              <h1 className="text-foreground text-2xl font-semibold tracking-tight">
                 Agent prompts
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Edit the role and session prompts used by the LiveKit agent.
               </p>
             </div>
@@ -93,7 +99,7 @@ export default function PromptsPage() {
             type="button"
             onClick={save}
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {saving ? (
               <SpinnerGap className="size-4 animate-spin" weight="bold" />
@@ -121,7 +127,7 @@ export default function PromptsPage() {
           <div>
             <label
               htmlFor="agent-prompt"
-              className="mb-2 block text-sm font-medium text-foreground"
+              className="text-foreground mb-2 block text-sm font-medium"
             >
               Agent prompt (role / character)
             </label>
@@ -130,7 +136,7 @@ export default function PromptsPage() {
               value={agentPrompt}
               onChange={(e) => setAgentPrompt(e.target.value)}
               rows={12}
-              className="w-full rounded-lg border border-input bg-card px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+              className="border-input bg-card text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring/20 w-full rounded-lg border px-3 py-2 font-mono text-sm focus:ring-2 focus:outline-none"
               placeholder="Agent role and personality…"
               spellCheck={false}
             />
@@ -138,7 +144,7 @@ export default function PromptsPage() {
           <div>
             <label
               htmlFor="session-prompt"
-              className="mb-2 block text-sm font-medium text-foreground"
+              className="text-foreground mb-2 block text-sm font-medium"
             >
               Session prompt (flow, constraints, rubrik)
             </label>
@@ -147,7 +153,7 @@ export default function PromptsPage() {
               value={sessionPrompt}
               onChange={(e) => setSessionPrompt(e.target.value)}
               rows={24}
-              className="w-full rounded-lg border border-input bg-card px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+              className="border-input bg-card text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-ring/20 w-full rounded-lg border px-3 py-2 font-mono text-sm focus:ring-2 focus:outline-none"
               placeholder="Session flow and rules…"
               spellCheck={false}
             />
