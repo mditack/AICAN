@@ -67,7 +67,45 @@ berikan rating 50-100 (persentase) sesuai jawaban yang diberikan
 5. berikan nilai 95 – 100 (sangat baik) 
 `.trim();
 
+/** Default voice when none is stored (Gemini native audio). */
+export const DEFAULT_VOICE = 'Enceladus';
+
+/** Gemini 2.5 Flash Native Audio voice options for the prompts page and agent. */
+export const VOICE_OPTIONS: { id: string; name: string; description: string }[] = [
+  { id: 'Zephyr', name: 'Zephyr', description: 'Bright, Higher pitch' },
+  { id: 'Puck', name: 'Puck', description: 'Upbeat, Middle pitch' },
+  { id: 'Charon', name: 'Charon', description: 'Informative, Lower pitch' },
+  { id: 'Kore', name: 'Kore', description: 'Firm, Middle pitch' },
+  { id: 'Fenrir', name: 'Fenrir', description: 'Excitable, Lower middle pitch' },
+  { id: 'Leda', name: 'Leda', description: 'Youthful, Higher pitch' },
+  { id: 'Orus', name: 'Orus', description: 'Firm, Lower middle pitch' },
+  { id: 'Aoede', name: 'Aoede', description: 'Breezy, Middle pitch' },
+  { id: 'Callirrhoe', name: 'Callirrhoe', description: 'Easy-going, Middle pitch' },
+  { id: 'Autonoe', name: 'Autonoe', description: 'Bright, Middle pitch' },
+  { id: 'Enceladus', name: 'Enceladus', description: 'Breathy, Lower pitch' },
+  { id: 'Iapetus', name: 'Iapetus', description: 'Clear, Lower middle pitch' },
+  { id: 'Umbriel', name: 'Umbriel', description: 'Easy-going, Lower middle pitch' },
+  { id: 'Algieba', name: 'Algieba', description: 'Smooth, Lower pitch' },
+  { id: 'Despina', name: 'Despina', description: 'Smooth, Middle pitch' },
+  { id: 'Erinome', name: 'Erinome', description: 'Clear, Middle pitch' },
+  { id: 'Algenib', name: 'Algenib', description: 'Gravelly, Lower pitch' },
+  { id: 'Rasalgethi', name: 'Rasalgethi', description: 'Informative, Middle pitch' },
+  { id: 'Laomedeia', name: 'Laomedeia', description: 'Upbeat, Higher pitch' },
+  { id: 'Achernar', name: 'Achernar', description: 'Soft, Higher pitch' },
+  { id: 'Alnilam', name: 'Alnilam', description: 'Firm, Lower middle pitch' },
+  { id: 'Schedar', name: 'Schedar', description: 'Even, Lower middle pitch' },
+  { id: 'Gacrux', name: 'Gacrux', description: 'Mature, Middle pitch' },
+  { id: 'Pulcherrima', name: 'Pulcherrima', description: 'Forward, Middle pitch' },
+  { id: 'Achird', name: 'Achird', description: 'Friendly, Lower middle pitch' },
+  { id: 'Zubenelgenubi', name: 'Zubenelgenubi', description: 'Casual, Lower middle pitch' },
+  { id: 'Vindemiatrix', name: 'Vindemiatrix', description: 'Gentle, Middle pitch' },
+  { id: 'Sadachbia', name: 'Sadachbia', description: 'Lively, Lower pitch' },
+  { id: 'Sadaltager', name: 'Sadaltager', description: 'Knowledgeable, Middle pitch' },
+  { id: 'Sulafat', name: 'Sulafat', description: 'Warm, Middle pitch' },
+];
+
 export interface StoredPrompts {
   agentPrompt: string;
   sessionPrompt: string;
+  voice: string;
 }

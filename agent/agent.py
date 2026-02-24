@@ -27,8 +27,8 @@ AGENT_NAME = os.getenv("AGENT_NAME", "")
 PROMPTS_API_URL = os.getenv("PROMPTS_API_URL", "")
 
 
-def _fetch_prompts_from_api() -> tuple[str, str] | None:
-    """Fetch agent and session prompts from the API. Returns (agent_prompt, session_prompt) or None on failure."""
+def _fetch_prompts_from_api() -> tuple[str, str, str] | None:
+    """Fetch agent and session prompts and voice from the API. Returns (agent_prompt, session_prompt, voice) or None on failure."""
     if not PROMPTS_API_URL or not PROMPTS_API_URL.startswith("http"):
         return None
     try:
@@ -37,8 +37,9 @@ def _fetch_prompts_from_api() -> tuple[str, str] | None:
         data = r.json()
         agent = data.get("agentPrompt")
         session = data.get("sessionPrompt")
+        voice = data.get("voice")
         if isinstance(agent, str) and isinstance(session, str):
-            return (agent, session)
+            return (agent, session, voice if isinstance(voice, str) and voice.strip() else "Enceladus")
     except Exception as e:
         logger.warning("Failed to fetch prompts from API (%s), using defaults: %s", PROMPTS_API_URL, e)
     return None
@@ -67,15 +68,16 @@ server = AgentServer()
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def my_agent(ctx: agents.JobContext):
-    # Load prompts from API if PROMPTS_API_URL is set, otherwise use prompts.py
+    # Load prompts and voice from API if PROMPTS_API_URL is set, otherwise use prompts.py and default voice
     fetched = await asyncio.to_thread(_fetch_prompts_from_api)
     agent_prompt = fetched[0] if fetched else AGENT_PROMPT
     session_prompt = fetched[1] if fetched else SESSION_PROMPT
+    voice = fetched[2] if fetched else "Enceladus"
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-2.5-flash-native-audio-preview-12-2025",
-            voice="Enceladus",
+            voice=voice,
             language="id-ID",
             temperature=1.0,
         ),

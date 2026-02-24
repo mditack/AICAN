@@ -3,16 +3,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, FloppyDisk, SpinnerGap } from '@phosphor-icons/react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { DEFAULT_VOICE, VOICE_OPTIONS } from '@/lib/prompt-defaults';
 
 type PromptsData = {
   agentPrompt: string;
   sessionPrompt: string;
+  voice?: string;
   source?: string;
 };
 
 export default function PromptsPage() {
   const [agentPrompt, setAgentPrompt] = useState('');
   const [sessionPrompt, setSessionPrompt] = useState('');
+  const [voice, setVoice] = useState(DEFAULT_VOICE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -26,6 +36,9 @@ export default function PromptsPage() {
       const data: PromptsData = await res.json();
       setAgentPrompt(data.agentPrompt ?? '');
       setSessionPrompt(data.sessionPrompt ?? '');
+      setVoice(
+        data.voice && VOICE_OPTIONS.some((v) => v.id === data.voice) ? data.voice : DEFAULT_VOICE
+      );
     } catch (e) {
       setMessage({
         type: 'error',
@@ -47,13 +60,13 @@ export default function PromptsPage() {
       const res = await fetch('/api/prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentPrompt, sessionPrompt }),
+        body: JSON.stringify({ agentPrompt, sessionPrompt, voice }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? 'Failed to save');
       setMessage({
         type: 'success',
-        text: 'Prompts saved. The agent will use these on the next session.',
+        text: 'Prompts and voice saved. The agent will use these on the next session.',
       });
     } catch (e) {
       setMessage({
@@ -124,6 +137,24 @@ export default function PromptsPage() {
         )}
 
         <div className="space-y-6">
+          <div>
+            <label className="text-foreground mb-2 block text-sm font-medium">Voice</label>
+            <p className="text-muted-foreground mb-2 text-sm">
+              Gemini native audio voice. The agent will use the selected voice on the next session.
+            </p>
+            <Select value={voice} onValueChange={setVoice}>
+              <SelectTrigger className="border-input bg-card text-foreground w-full max-w-md">
+                <SelectValue placeholder="Select the model voice" />
+              </SelectTrigger>
+              <SelectContent>
+                {VOICE_OPTIONS.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name} — {v.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <label
               htmlFor="agent-prompt"
