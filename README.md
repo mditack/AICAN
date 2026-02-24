@@ -1,179 +1,101 @@
-# Agent Starter for React
+# AICAN Agent (Gemini 2.5 Flash Native Audio)
 
-This is a starter template for [LiveKit Agents](https://docs.livekit.io/agents) that provides a simple voice interface using [Agents UI](https://livekit.io/ui) components and [LiveKit JavaScript SDK](https://github.com/livekit/client-sdk-js). It supports [voice](https://docs.livekit.io/agents/start/voice-ai), [transcriptions](https://docs.livekit.io/agents/build/text/), and [virtual avatars](https://docs.livekit.io/agents/integrations/avatar).
+Voice agent using **Gemini 2.5 Flash Native Audio** with:
 
-Also available for:
-[Android](https://github.com/livekit-examples/agent-starter-android) • [Flutter](https://github.com/livekit-examples/agent-starter-flutter) • [Swift](https://github.com/livekit-examples/agent-starter-swift) • [React Native](https://github.com/livekit-examples/agent-starter-react-native)
+- **Model:** `gemini-2.5-flash-native-audio-preview-12-2025`
+- **Voice:** Enceladus
+- **Language:** Indonesian (`id-ID`)
+- **Temperature:** 1.0
 
-<picture>
-  <source srcset="./.github/assets/readme-hero-dark.webp" media="(prefers-color-scheme: dark)">
-  <source srcset="./.github/assets/readme-hero-light.webp" media="(prefers-color-scheme: light)">
-  <img src="./.github/assets/readme-hero-light.webp" alt="App screenshot">
-</picture>
+## Prerequisites
 
-### Features:
+- Python >= 3.10, < 3.14
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended) or pip
+- [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/) (`lk`)
+- LiveKit Cloud project and Google API key
 
-- Real-time voice interaction with LiveKit Agents
-- Camera video streaming support
-- Screen sharing capabilities
-- Audio visualization and level monitoring
-- Virtual avatar integration
-- Light/dark theme switching with system preference detection
-- Customizable branding, colors, and UI text via configuration
+## Setup
 
-This template is built with Next.js and is free for you to use or modify as you see fit.
+1. **From repo root**, copy env (or create `agent/.env.local` with):
 
-### Project structure
+   ```bash
+   cd agent
+   cp .env.example .env.local
+   ```
 
-This starter uses the [Agents UI](https://livekit.io/ui) components for core UI elements like media controls, audio visualizers, chat transcripts, and providing session data. Shadcn installs components into `components/` folder so you can customize them like any other local component.
+   Then set in `agent/.env.local`:
+   - `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL` — from [LiveKit Cloud](https://cloud.livekit.io) or run `lk appenv -w` from project root and copy into `agent/.env.local`.
+   - `GOOGLE_API_KEY` — from [Google AI Studio](https://aistudio.google.com/apikey).
 
-```
-agent-starter-react/
-├── app/
-│   ├── api/
-├── components/
-│   ├── agents-ui/     - Agents UI components
-│   ├── ai-elements/   - AI Elements components
-│   ├── app/           - App-specific components
-│   ├── ui/            - Primitive shadcn/ui components
-├── fonts/
-├── hooks/
-├── lib/
-├── public/
-└── package.json
-```
+2. **Install dependencies** (from `agent/`):
 
-Business logic lives within the `components/app` folder. It's here where the application's state and behavior is managed and the various Shadcn UI components are composed together.
+   ```bash
+   uv sync
+   # or: pip install -e ".[google]"
+   ```
 
-| File                  | Description                                                                                                                                           |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session-view.tsx`    | Initializes the application, and LiveKit session. Renders the view controller and session UI including chat transcript, media tiles, and control bar. |
-| `view-controller.tsx` | Manages the transitions between the welcome and session views based on the LiveKit session state.                                                     |
-| `welcome-view.tsx`    | Renders the welcome UI when the LiveKit session is not connected.                                                                                     |
-| `chat-transcript.tsx` | Manages the chat transcript transitions.                                                                                                              |
-| `tile-layout.tsx`     | Manages the layout and transition of media tiles in various application states.                                                                       |
+## Run locally
 
-### Component usage
-
-Most Agents UI components require access to a LiveKit session object for access to values like agent state or audio tracks. A Session object can be created from a [TokenSource](/reference/client-sdk-js/variables/TokenSource.html), and provided by wrapping the component in an [AgentSessionProvider](/reference/components/shadcn/component/agent-session-provider).
-
-See [`components/app/app.tsx`](./components/app/app.tsx) for an example of how this is done in this app.
-
-### Customizing components
-
-Agents UI components, like most Shadcn compopnents, take as many primitive attributes as possible. For example, the [AgentControlBar](/reference/components/shadcn/component/agent-control-bar/page.mdoc) component extends `HTMLAttributes<HTMLDivElement>`, so you can pass any props that a div supports. This makes it easy to extend the component with your own styles or functionality.
-
-You can edit any Agents UI component's source code in the `components/agents-ui` directory. For style changes, we recommend passing in tailwind classes to override the default styles. Take a look at the source code to get a sense of how to override a component's default styles.
-
-### Updating components
-
-To update the Agents UI components to the latest publication, run the following command:
+From `agent/`:
 
 ```bash
-pnpm shadcn:install
-```
-
-> [!NOTE]
-> The CLI will ask before overwriting any modified files so you can avoid losing any customizations you might have made.
-
-### Installing components
-
-```bash
-pnpm dlx shadcn@latest add @agents-ui/{component-name-a} @agents-ui/{component-name-b}
-```
-
-## Getting started
-
-> [!TIP]
-> If you'd like to try this application without modification, you can deploy an instance in just a few clicks with [LiveKit Cloud Sandbox](https://cloud.livekit.io/projects/p_/sandbox/templates/agent-starter-react).
-
-[![Open on LiveKit](https://img.shields.io/badge/Open%20on%20LiveKit%20Cloud-002CF2?style=for-the-badge&logo=external-link)](https://cloud.livekit.io/projects/p_/sandbox/templates/agent-starter-react)
-
-Run the following command to automatically clone this template.
-
-```bash
-lk app create --template agent-starter-react
-```
-
-Then run the app with:
-
-```bash
-pnpm install
-pnpm dev
-```
-
-And open http://localhost:3000 in your browser.
-
-**Run the agent locally (required for the agent to join):** In a **second terminal**, from the `agent/` directory run:
-
-```bash
-cd agent
+# Dev: connect to LiveKit and use with playground or your React app
 uv run agent.py dev
+
+# Console: talk in terminal only
+uv run agent.py console
 ```
 
-Keep both the Next.js dev server and the agent running. Set `AGENT_NAME` and `NEXT_PUBLIC_AGENT_NAME` in the repo root `.env.local` (e.g. `AICAN`) so the frontend requests your agent when joining the room.
+Ensure the React app (from repo root) uses the same LiveKit project and that `AGENT_NAME` matches the name you give when deploying (see below).
 
-You'll also need an agent to speak with. This project includes an **AICAN agent** in the [`agent/`](./agent/) directory that uses **Gemini 2.5 Flash Native Audio** (voice: Enceladus, language: id-ID). To deploy it to LiveKit Cloud and use it with this app:
+## Deploy to LiveKit Cloud
 
-1. Deploy the agent: `cd agent && lk agent create` (see [agent/README.md](./agent/README.md) for setup and secrets).
-2. Set the deployed agent name in `.env.local`: `AGENT_NAME=<agent-name-from-deploy>`.
+1. **Install and auth LiveKit CLI** (if not done):
+   - Install: `winget install LiveKit.LiveKitCLI` (Windows) or see [docs](https://docs.livekit.io/intro/basics/cli/).
+   - Link project: `lk cloud auth`.
 
-Alternatively, try the starter agents for [Python](https://github.com/livekit-examples/agent-starter-python), [Node.js](https://github.com/livekit-examples/agent-starter-node), or [create your own](https://docs.livekit.io/agents/start/voice-ai/).
+2. **From the `agent` directory**, deploy:
 
-## Configuration
+   ```bash
+   cd agent
+   lk agent create
+   ```
 
-This starter is designed to be flexible so you can adapt it to your specific agent use case. You can easily configure it to work with different types of inputs and outputs:
+   The CLI will:
+   - Create `Dockerfile` and `livekit.toml` if missing
+   - Build the image and deploy to your LiveKit Cloud project
+   - Assign an **agent name** (e.g. `aican-agent-xxxx`)
 
-#### Example: App configuration (`app-config.ts`)
+3. **Set the agent name in the frontend** so the app uses this agent:
+   - In the project root `.env.local`, set:
+     ```env
+     AGENT_NAME=<agent-name-from-deploy>
+     ```
+   - Or in `app-config.ts`, set `agentName` to that value.
 
-```ts
-export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'LiveKit',
-  pageTitle: 'LiveKit Voice Agent',
-  pageDescription: 'A voice agent built with LiveKit',
+4. **Secrets on LiveKit Cloud**  
+   Add these in the Cloud dashboard (Project → Settings → Secrets) or via `lk agent update-secrets`:
+   - `GOOGLE_API_KEY` — required for Gemini.
+   - For **Simli avatar**: `SIMLI_API_KEY` and `SIMLI_FACE_ID` (get key from [app.simli.com/apikey](https://app.simli.com/apikey), face ID from [Simli faces](https://app.simli.com/create/from-existing)). If either is missing, the agent runs without avatar.  
+     **If you see "401 Unauthorized" in logs:** the Simli API rejected the key — use a valid API key from the Simli dashboard, ensure the secret name is exactly `SIMLI_API_KEY`, and that the value has no leading/trailing spaces.
 
-  supportsChatInput: true,
-  supportsVideoInput: true,
-  supportsScreenShare: true,
-  isPreConnectBufferEnabled: true,
+## Useful commands
 
-  logo: '/lk-logo.svg',
-  accent: '#002cf2',
-  logoDark: '/lk-logo-dark.svg',
-  accentDark: '#1fd5f9',
-  startButtonText: 'Start call',
+- **Status:** `lk agent status`
+- **Logs:** `lk agent logs`
+- **Redeploy after changes:** `lk agent create` (or use the deploy workflow from the docs)
 
-  // agent dispatch configuration
-  agentName: undefined,
+## Model config (in code)
 
-  // LiveKit Cloud Sandbox configuration
-  sandboxId: undefined,
-};
+The agent uses this LLM config in `agent/agent.py`:
+
+```python
+llm=google.realtime.RealtimeModel(
+    model="gemini-2.5-flash-native-audio-preview-12-2025",
+    voice="Enceladus",
+    language="id-ID",
+    temperature=1.0,
+)
 ```
 
-You can update these values in [`app-config.ts`](./app-config.ts) to customize branding, features, and UI text for your deployment.
-
-> [!NOTE]
-> The `sandboxId` is for the LiveKit Cloud Sandbox environment.
-> It is not used for local development.
-
-#### Environment Variables
-
-You'll also need to configure your LiveKit credentials in `.env.local` (copy `.env.example` if you don't have one):
-
-```env
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_api_secret
-LIVEKIT_URL=https://your-livekit-server-url
-
-# Agent dispatch (https://docs.livekit.io/agents/server/agent-dispatch)
-# For explicit dispatch, set both AGENT_NAME and NEXT_PUBLIC_AGENT_NAME (e.g. AICAN)
-AGENT_NAME=
-NEXT_PUBLIC_AGENT_NAME=
-```
-
-These are required for the voice agent functionality to work with your LiveKit project.
-
-## Contributing
-
-This template is open source and we welcome contributions! Please open a PR or issue through GitHub, and don't forget to join us in the [LiveKit Community Slack](https://livekit.io/join-slack)!
+Edit `agent/agent.py` to change instructions, voice, or language, then redeploy.
