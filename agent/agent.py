@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import AgentServer, AgentSession, Agent, room_io
 from livekit.plugins import google, noise_cancellation  # , bey
-from livekit.plugins import simli
+# from livekit.plugins import simli
 from livekit.plugins.google.realtime import RealtimeModel
 from prompts import AGENT_PROMPT, SESSION_PROMPT
 
@@ -101,37 +101,40 @@ async def my_agent(ctx: agents.JobContext):
     #     except Exception as e:
     #         logger.warning("Bey avatar failed; continuing without avatar: %s", e)
 
-    # Optional Simli avatar: start BEFORE session.start() per LiveKit docs so audio is routed to avatar from the start
-    avatar_enabled = _avatar_enabled_for_room(ctx)
-    simli_api_key = os.getenv("SIMLI_API_KEY")
-    simli_face_id = os.getenv("SIMLI_FACE_ID")
-    if not avatar_enabled:
-        logger.debug("Avatar disabled by user; skipping Simli avatar")
-    elif not simli_api_key or not simli_face_id:
-        logger.info(
-            "Simli avatar skipped: set SIMLI_API_KEY and SIMLI_FACE_ID in agent secrets (or .env.local for local run)"
-        )
-    else:
-        # Simli API expects wss:// for LiveKit URL
-        livekit_url = os.getenv("LIVEKIT_URL", "")
-        if livekit_url.startswith("https://"):
-            os.environ["LIVEKIT_URL"] = livekit_url.replace("https://", "wss://", 1)
-        try:
-            avatar = simli.AvatarSession(
-                simli_config=simli.SimliConfig(
-                    api_key=simli_api_key,
-                    face_id=simli_face_id,
-                ),
-            )
-            await asyncio.wait_for(
-                avatar.start(session, room=ctx.room),
-                timeout=30.0,
-            )
-            logger.info("Simli avatar started successfully")
-        except asyncio.TimeoutError:
-            logger.warning("Simli avatar start timed out; continuing without avatar")
-        except Exception as e:
-            logger.warning("Simli avatar failed; continuing without avatar: %s", e)
+    # Optional Simli avatar disabled (commented out).
+    # If you re-enable this, note that we intentionally start the avatar BEFORE
+    # `session.start()` so audio is routed to the avatar from the beginning.
+    #
+    # avatar_enabled = _avatar_enabled_for_room(ctx)
+    # simli_api_key = os.getenv("SIMLI_API_KEY")
+    # simli_face_id = os.getenv("SIMLI_FACE_ID")
+    # if not avatar_enabled:
+    #     logger.debug("Avatar disabled by user; skipping Simli avatar")
+    # elif not simli_api_key or not simli_face_id:
+    #     logger.info(
+    #         "Simli avatar skipped: set SIMLI_API_KEY and SIMLI_FACE_ID in agent secrets (or .env.local for local run)"
+    #     )
+    # else:
+    #     # Simli API expects wss:// for LiveKit URL
+    #     livekit_url = os.getenv("LIVEKIT_URL", "")
+    #     if livekit_url.startswith("https://"):
+    #         os.environ["LIVEKIT_URL"] = livekit_url.replace("https://", "wss://", 1)
+    #     try:
+    #         avatar = simli.AvatarSession(
+    #             simli_config=simli.SimliConfig(
+    #                 api_key=simli_api_key,
+    #                 face_id=simli_face_id,
+    #             ),
+    #         )
+    #         await asyncio.wait_for(
+    #             avatar.start(session, room=ctx.room),
+    #             timeout=30.0,
+    #         )
+    #         logger.info("Simli avatar started successfully")
+    #     except asyncio.TimeoutError:
+    #         logger.warning("Simli avatar start timed out; continuing without avatar")
+    #     except Exception as e:
+    #         logger.warning("Simli avatar failed; continuing without avatar: %s", e)
 
     await session.start(
         room=ctx.room,

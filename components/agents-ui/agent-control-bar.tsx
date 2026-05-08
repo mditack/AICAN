@@ -2,7 +2,7 @@
 
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { Track } from 'livekit-client';
-import { Loader, MessageSquareTextIcon, SendHorizontal, UserCircle } from 'lucide-react';
+import { Loader, MessageSquareTextIcon, SendHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useChat } from '@livekit/components-react';
 import { AgentDisconnectButton } from '@/components/agents-ui/agent-disconnect-button';
@@ -247,8 +247,6 @@ export function AgentControlBar({
   onDisconnect,
   onDeviceError,
   onIsChatOpenChange,
-  avatarEnabled = true,
-  onAvatarEnabledChange,
   className,
   ...props
 }: AgentControlBarProps & ComponentProps<'div'>) {
@@ -387,21 +385,7 @@ export function AgentControlBar({
             </Toggle>
           )}
 
-          {/* Toggle Avatar visibility */}
-          {visibleControls.avatar && onAvatarEnabledChange && (
-            <Toggle
-              variant={variant === 'outline' ? 'outline' : 'default'}
-              pressed={avatarEnabled}
-              aria-label="Toggle avatar"
-              onPressedChange={onAvatarEnabledChange}
-              className={agentTrackToggleVariants({
-                variant: variant === 'outline' ? 'outline' : 'default',
-                className: cn(variant === 'livekit' && [TOGGLE_VARIANT_2, 'rounded-full']),
-              })}
-            >
-              <UserCircle className={cn('size-4', avatarEnabled && 'fill-current')} />
-            </Toggle>
-          )}
+          {/* Avatar toggle removed (avatar disabled). */}
         </div>
 
         {/* Disconnect */}
