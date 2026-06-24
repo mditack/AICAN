@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, FloppyDisk, Play, Pause, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowLeft, FloppyDisk, Pause, Play, SpinnerGap } from '@phosphor-icons/react';
 import {
   Select,
   SelectContent,
@@ -12,8 +12,6 @@ import {
 } from '@/components/ui/select';
 import {
   DEFAULT_TTS_PROVIDER,
-  GEMINI_VOICE_OPTIONS,
-  ELEVENLABS_VOICE_OPTIONS,
   getDefaultVoice,
   getVoiceOptions,
   type TtsProvider,
@@ -54,7 +52,9 @@ export default function PromptsPage() {
       setTtsProvider(provider);
       const options = getVoiceOptions(provider);
       setVoice(
-        data.voice && options.some((v) => v.id === data.voice) ? data.voice : getDefaultVoice(provider)
+        data.voice && options.some((v) => v.id === data.voice)
+          ? data.voice
+          : getDefaultVoice(provider)
       );
     } catch (e) {
       setMessage({
