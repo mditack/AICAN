@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
 import {
   DEFAULT_AGENT_PROMPT,
   DEFAULT_SESSION_PROMPT,
@@ -10,16 +9,10 @@ import {
   type TtsProvider,
   getDefaultVoice,
 } from '@/lib/prompt-defaults';
+import { getRedis } from '@/lib/redis';
 
 const REDIS_KEY = 'aican:prompts';
 const VALID_TTS_PROVIDERS = new Set<TtsProvider>(['gemini', 'elevenlabs']);
-
-function getRedis(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
-  return new Redis({ url, token });
-}
 
 function validProvider(v: unknown): TtsProvider {
   if (typeof v === 'string' && VALID_TTS_PROVIDERS.has(v as TtsProvider)) return v as TtsProvider;
