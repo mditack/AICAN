@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/select';
 import {
   DEFAULT_TTS_PROVIDER,
+  type TtsProvider,
   getDefaultVoice,
   getVoiceOptions,
-  type TtsProvider,
 } from '@/lib/prompt-defaults';
 
 type PromptsData = {

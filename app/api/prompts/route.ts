@@ -6,9 +6,9 @@ import {
   DEFAULT_TTS_PROVIDER,
   ELEVENLABS_VOICE_OPTIONS,
   GEMINI_VOICE_OPTIONS,
-  getDefaultVoice,
   type StoredPrompts,
   type TtsProvider,
+  getDefaultVoice,
 } from '@/lib/prompt-defaults';
 
 const REDIS_KEY = 'aican:prompts';
