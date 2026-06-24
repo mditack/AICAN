@@ -3,12 +3,16 @@ import { Redis } from '@upstash/redis';
 import {
   DEFAULT_AGENT_PROMPT,
   DEFAULT_SESSION_PROMPT,
-  DEFAULT_VOICE,
+  DEFAULT_TTS_PROVIDER,
+  GEMINI_VOICE_OPTIONS,
+  ELEVENLABS_VOICE_OPTIONS,
+  getDefaultVoice,
   type StoredPrompts,
-  VOICE_OPTIONS,
+  type TtsProvider,
 } from '@/lib/prompt-defaults';
 
 const REDIS_KEY = 'aican:prompts';
+const VALID_TTS_PROVIDERS = new Set<TtsProvider>(['gemini', 'elevenlabs']);
 
 function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -17,38 +21,49 @@ function getRedis(): Redis | null {
   return new Redis({ url, token });
 }
 
+function validProvider(v: unknown): TtsProvider {
+  if (typeof v === 'string' && VALID_TTS_PROVIDERS.has(v as TtsProvider)) return v as TtsProvider;
+  return DEFAULT_TTS_PROVIDER;
+}
+
 export const revalidate = 0;
 
 /** GET: return current prompts (from Upstash or defaults). Used by the prompts page and by the LiveKit agent. */
 export async function GET() {
   try {
     const redis = getRedis();
+    const defaultProvider = DEFAULT_TTS_PROVIDER;
+    const defaults: StoredPrompts & { source: string } = {
+      agentPrompt: DEFAULT_AGENT_PROMPT,
+      sessionPrompt: DEFAULT_SESSION_PROMPT,
+      voice: getDefaultVoice(defaultProvider),
+      ttsProvider: defaultProvider,
+      source: 'defaults',
+    };
+
     if (!redis) {
-      return NextResponse.json({
-        agentPrompt: DEFAULT_AGENT_PROMPT,
-        sessionPrompt: DEFAULT_SESSION_PROMPT,
-        voice: DEFAULT_VOICE,
-        source: 'defaults',
-      } satisfies StoredPrompts & { source: string });
+      return NextResponse.json(defaults);
     }
+
     const stored = await redis.get<StoredPrompts>(REDIS_KEY);
     if (
       !stored ||
       typeof stored?.agentPrompt !== 'string' ||
       typeof stored?.sessionPrompt !== 'string'
     ) {
-      return NextResponse.json({
-        agentPrompt: DEFAULT_AGENT_PROMPT,
-        sessionPrompt: DEFAULT_SESSION_PROMPT,
-        voice: DEFAULT_VOICE,
-        source: 'defaults',
-      } satisfies StoredPrompts & { source: string });
+      return NextResponse.json(defaults);
     }
+
+    const ttsProvider = validProvider(stored.ttsProvider);
     const voice =
-      typeof stored.voice === 'string' && stored.voice.length > 0 ? stored.voice : DEFAULT_VOICE;
+      typeof stored.voice === 'string' && stored.voice.length > 0
+        ? stored.voice
+        : getDefaultVoice(ttsProvider);
+
     return NextResponse.json({
       ...stored,
       voice,
+      ttsProvider,
       source: 'upstash',
     } satisfies StoredPrompts & { source: string });
   } catch (error) {
@@ -57,9 +72,15 @@ export async function GET() {
   }
 }
 
-const VALID_VOICE_IDS = new Set(VOICE_OPTIONS.map((v) => v.id));
+const VALID_GEMINI_IDS = new Set(GEMINI_VOICE_OPTIONS.map((v) => v.id));
+const VALID_ELEVENLABS_IDS = new Set(ELEVENLABS_VOICE_OPTIONS.map((v) => v.id));
 
-/** POST: save prompts and voice to Upstash. Body: { agentPrompt?, sessionPrompt?, voice? }. */
+function isValidVoice(voiceId: string, provider: TtsProvider): boolean {
+  if (provider === 'elevenlabs') return VALID_ELEVENLABS_IDS.has(voiceId);
+  return VALID_GEMINI_IDS.has(voiceId);
+}
+
+/** POST: save prompts, voice, and TTS provider to Upstash. */
 export async function POST(req: Request) {
   try {
     const redis = getRedis();
@@ -75,28 +96,48 @@ export async function POST(req: Request) {
     const body = await req.json();
     const agentPrompt = typeof body?.agentPrompt === 'string' ? body.agentPrompt : undefined;
     const sessionPrompt = typeof body?.sessionPrompt === 'string' ? body.sessionPrompt : undefined;
+    const ttsProviderRaw = typeof body?.ttsProvider === 'string' ? body.ttsProvider : undefined;
+    const ttsProvider =
+      ttsProviderRaw && VALID_TTS_PROVIDERS.has(ttsProviderRaw as TtsProvider)
+        ? (ttsProviderRaw as TtsProvider)
+        : undefined;
     const voiceRaw = typeof body?.voice === 'string' ? body.voice.trim() : undefined;
-    const voice = voiceRaw && VALID_VOICE_IDS.has(voiceRaw) ? voiceRaw : undefined;
-    if (agentPrompt === undefined && sessionPrompt === undefined && voice === undefined) {
+    const resolvedProvider = ttsProvider ?? DEFAULT_TTS_PROVIDER;
+    const voice = voiceRaw && isValidVoice(voiceRaw, resolvedProvider) ? voiceRaw : undefined;
+
+    if (
+      agentPrompt === undefined &&
+      sessionPrompt === undefined &&
+      voice === undefined &&
+      ttsProvider === undefined
+    ) {
       return NextResponse.json(
-        { error: 'Provide at least one of agentPrompt, sessionPrompt, or voice' },
+        { error: 'Provide at least one of agentPrompt, sessionPrompt, voice, or ttsProvider' },
         { status: 400 }
       );
     }
+
     const existing = (await redis.get<StoredPrompts>(REDIS_KEY)) ?? {
       agentPrompt: DEFAULT_AGENT_PROMPT,
       sessionPrompt: DEFAULT_SESSION_PROMPT,
-      voice: DEFAULT_VOICE,
+      voice: getDefaultVoice(DEFAULT_TTS_PROVIDER),
+      ttsProvider: DEFAULT_TTS_PROVIDER,
     };
+
+    const existingProvider = validProvider(existing.ttsProvider);
+    const nextProvider = ttsProvider ?? existingProvider;
     const existingVoice =
       typeof existing.voice === 'string' && existing.voice.length > 0
         ? existing.voice
-        : DEFAULT_VOICE;
+        : getDefaultVoice(nextProvider);
+
     const next: StoredPrompts = {
       agentPrompt: agentPrompt ?? existing.agentPrompt,
       sessionPrompt: sessionPrompt ?? existing.sessionPrompt,
       voice: voice ?? existingVoice,
+      ttsProvider: nextProvider,
     };
+
     await redis.set(REDIS_KEY, next);
     return NextResponse.json(next);
   } catch (error) {

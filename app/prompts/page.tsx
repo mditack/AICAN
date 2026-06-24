@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, FloppyDisk, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowLeft, FloppyDisk, Play, Pause, SpinnerGap } from '@phosphor-icons/react';
 import {
   Select,
   SelectContent,
@@ -10,22 +10,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DEFAULT_VOICE, VOICE_OPTIONS } from '@/lib/prompt-defaults';
+import {
+  DEFAULT_TTS_PROVIDER,
+  GEMINI_VOICE_OPTIONS,
+  ELEVENLABS_VOICE_OPTIONS,
+  getDefaultVoice,
+  getVoiceOptions,
+  type TtsProvider,
+} from '@/lib/prompt-defaults';
 
 type PromptsData = {
   agentPrompt: string;
   sessionPrompt: string;
   voice?: string;
+  ttsProvider?: TtsProvider;
   source?: string;
 };
 
 export default function PromptsPage() {
   const [agentPrompt, setAgentPrompt] = useState('');
   const [sessionPrompt, setSessionPrompt] = useState('');
-  const [voice, setVoice] = useState(DEFAULT_VOICE);
+  const [ttsProvider, setTtsProvider] = useState<TtsProvider>(DEFAULT_TTS_PROVIDER);
+  const [voice, setVoice] = useState(getDefaultVoice(DEFAULT_TTS_PROVIDER));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const voiceOptions = getVoiceOptions(ttsProvider);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,8 +50,11 @@ export default function PromptsPage() {
       const data: PromptsData = await res.json();
       setAgentPrompt(data.agentPrompt ?? '');
       setSessionPrompt(data.sessionPrompt ?? '');
+      const provider = data.ttsProvider === 'elevenlabs' ? 'elevenlabs' : 'gemini';
+      setTtsProvider(provider);
+      const options = getVoiceOptions(provider);
       setVoice(
-        data.voice && VOICE_OPTIONS.some((v) => v.id === data.voice) ? data.voice : DEFAULT_VOICE
+        data.voice && options.some((v) => v.id === data.voice) ? data.voice : getDefaultVoice(provider)
       );
     } catch (e) {
       setMessage({
@@ -53,6 +70,79 @@ export default function PromptsPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleProviderChange = (provider: TtsProvider) => {
+    stopPreview();
+    setTtsProvider(provider);
+    setVoice(getDefaultVoice(provider));
+  };
+
+  const stopPreview = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setPreviewPlaying(false);
+    setPreviewLoading(false);
+  };
+
+  const playPreview = async () => {
+    if (previewPlaying) {
+      stopPreview();
+      return;
+    }
+
+    if (ttsProvider !== 'elevenlabs') return;
+
+    setPreviewLoading(true);
+    try {
+      const res = await fetch('/api/voice-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceId: voice }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `Preview failed (${res.status})`);
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setPreviewPlaying(false);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        setPreviewPlaying(false);
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+      };
+
+      await audio.play();
+      setPreviewPlaying(true);
+    } catch (e) {
+      setMessage({
+        type: 'error',
+        text: e instanceof Error ? e.message : 'Failed to preview voice',
+      });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     setMessage(null);
@@ -60,7 +150,7 @@ export default function PromptsPage() {
       const res = await fetch('/api/prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentPrompt, sessionPrompt, voice }),
+        body: JSON.stringify({ agentPrompt, sessionPrompt, voice, ttsProvider }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? 'Failed to save');
@@ -137,24 +227,98 @@ export default function PromptsPage() {
         )}
 
         <div className="space-y-6">
+          {/* TTS Provider toggle */}
+          <div>
+            <label className="text-foreground mb-2 block text-sm font-medium">TTS Provider</label>
+            <p className="text-muted-foreground mb-3 text-sm">
+              Pilih engine suara. Gemini gratis (native audio), ElevenLabs premium (butuh API key).
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleProviderChange('gemini')}
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  ttsProvider === 'gemini'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                Gemini (Gratis)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleProviderChange('elevenlabs')}
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  ttsProvider === 'elevenlabs'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                ElevenLabs (Premium)
+              </button>
+            </div>
+            {ttsProvider === 'gemini' && (
+              <p className="text-muted-foreground mt-2 text-xs">
+                Gemini Native Audio — gratis via Google AI Studio. STT + LLM + TTS all-in-one.
+              </p>
+            )}
+            {ttsProvider === 'elevenlabs' && (
+              <p className="text-muted-foreground mt-2 text-xs">
+                Pipeline: Groq Whisper (STT) + Gemini Flash text (LLM) + ElevenLabs Flash (TTS).
+                Butuh GROQ_API_KEY dan ELEVEN_API_KEY.
+              </p>
+            )}
+          </div>
+
+          {/* Voice selector + preview */}
           <div>
             <label className="text-foreground mb-2 block text-sm font-medium">Voice</label>
             <p className="text-muted-foreground mb-2 text-sm">
-              Gemini native audio voice. The agent will use the selected voice on the next session.
+              {ttsProvider === 'gemini'
+                ? 'Suara Gemini native audio. Agent akan menggunakan suara ini di sesi berikutnya.'
+                : 'Suara ElevenLabs. Klik tombol play untuk preview suara dalam bahasa Indonesia.'}
             </p>
-            <Select value={voice} onValueChange={setVoice}>
-              <SelectTrigger className="border-input bg-card text-foreground w-full max-w-md">
-                <SelectValue placeholder="Select the model voice" />
-              </SelectTrigger>
-              <SelectContent>
-                {VOICE_OPTIONS.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name} — {v.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                value={voice}
+                onValueChange={(v) => {
+                  stopPreview();
+                  setVoice(v);
+                }}
+              >
+                <SelectTrigger className="border-input bg-card text-foreground w-full max-w-md">
+                  <SelectValue placeholder="Select the model voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {voiceOptions.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.name} — {v.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {ttsProvider === 'elevenlabs' && (
+                <button
+                  type="button"
+                  onClick={playPreview}
+                  disabled={previewLoading}
+                  className="border-border bg-card text-foreground hover:bg-accent flex size-10 shrink-0 items-center justify-center rounded-lg border transition-colors disabled:opacity-50"
+                  aria-label={previewPlaying ? 'Stop preview' : 'Play preview'}
+                  title={previewPlaying ? 'Stop preview' : 'Preview suara'}
+                >
+                  {previewLoading ? (
+                    <SpinnerGap className="size-4 animate-spin" weight="bold" />
+                  ) : previewPlaying ? (
+                    <Pause className="size-4" weight="fill" />
+                  ) : (
+                    <Play className="size-4" weight="fill" />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
+
           <div>
             <label
               htmlFor="agent-prompt"
