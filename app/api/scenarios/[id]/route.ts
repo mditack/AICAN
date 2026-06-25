@@ -34,8 +34,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const exists = await redis.sismember(REDIS_KEYS.scenarios, id);
-    if (!exists) {
-      return NextResponse.json({ error: 'Scenario not found' }, { status: 404 });
+    if (exists !== 1 && exists !== true) {
+      return NextResponse.json({ error: `Scenario not found (id=${id})` }, { status: 404 });
     }
 
     const body = await req.json();

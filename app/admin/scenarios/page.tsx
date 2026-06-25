@@ -8,6 +8,7 @@ import type { Scenario } from '@/lib/scenarios';
 export default function ScenariosPage() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,18 +25,36 @@ export default function ScenariosPage() {
   }, [load]);
 
   const toggleActive = async (id: string, current: string) => {
-    await fetch(`/api/scenarios/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: current === 'true' ? 'false' : 'true' }),
-    });
-    load();
+    setError(null);
+    try {
+      const res = await fetch(`/api/scenarios/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: current === 'true' ? 'false' : 'true' }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Toggle failed (${res.status})`);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal mengubah status skenario');
+    }
   };
 
   const deleteScenario = async (id: string, name: string) => {
     if (!confirm(`Hapus skenario "${name}"?`)) return;
-    await fetch(`/api/scenarios/${id}`, { method: 'DELETE' });
-    load();
+    setError(null);
+    try {
+      const res = await fetch(`/api/scenarios/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Delete failed (${res.status})`);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menghapus skenario');
+    }
   };
 
   const duplicateScenario = async (scenario: Scenario) => {
@@ -83,6 +102,12 @@ export default function ScenariosPage() {
           Buat Skenario Baru
         </Link>
       </div>
+
+      {error && (
+        <div className="border-destructive/30 bg-destructive/10 text-destructive mb-4 rounded-lg border px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
 
       {scenarios.length === 0 ? (
         <div className="border-border rounded-lg border py-12 text-center">
