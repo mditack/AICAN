@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { ArrowLeft, FloppyDisk, SpinnerGap } from '@phosphor-icons/react';
 import { VoicePicker } from '@/components/admin/voice-picker';
 import type { TtsProvider } from '@/lib/prompt-defaults';
@@ -10,7 +10,6 @@ import { CATEGORIES } from '@/lib/scenarios';
 
 export default function EditScenarioPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
