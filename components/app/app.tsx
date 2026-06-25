@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { useSession } from '@livekit/components-react';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import type { AppConfig } from '@/app-config';
@@ -51,7 +51,9 @@ export function App({ appConfig }: AppProps) {
         <ViewController
           appConfig={appConfig}
           avatarEnabledRef={avatarEnabledRef}
-          onSelectScenario={(id) => { scenarioIdRef.current = id; }}
+          onSelectScenario={(id) => {
+            scenarioIdRef.current = id;
+          }}
         />
       </main>
       <StartAudioButton label="Start Audio" />
