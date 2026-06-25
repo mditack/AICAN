@@ -82,10 +82,11 @@ Buat agentPrompt, sessionPrompt, dan rubricPrompt sesuai instruksi.`;
     }
 
     const parsed = JSON.parse(text);
+    const str = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v, null, 2) || '');
     return NextResponse.json({
-      agentPrompt: parsed.agentPrompt || '',
-      sessionPrompt: parsed.sessionPrompt || '',
-      rubricPrompt: parsed.rubricPrompt || '',
+      agentPrompt: str(parsed.agentPrompt),
+      sessionPrompt: str(parsed.sessionPrompt),
+      rubricPrompt: str(parsed.rubricPrompt),
     });
   } catch (error) {
     console.error('POST /api/scenarios/generate:', error);

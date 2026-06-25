@@ -65,10 +65,12 @@ Jika suatu bagian TIDAK berubah, tetap sertakan versi aslinya. Semua output dala
     }
 
     const parsed = JSON.parse(text);
+    const str = (v: unknown, fallback: string) =>
+      typeof v === 'string' ? v : v ? JSON.stringify(v, null, 2) : fallback;
     return NextResponse.json({
-      agentPrompt: parsed.agentPrompt || agentPrompt,
-      sessionPrompt: parsed.sessionPrompt || sessionPrompt,
-      rubricPrompt: parsed.rubricPrompt || rubricPrompt,
+      agentPrompt: str(parsed.agentPrompt, agentPrompt),
+      sessionPrompt: str(parsed.sessionPrompt, sessionPrompt),
+      rubricPrompt: str(parsed.rubricPrompt, rubricPrompt),
     });
   } catch (error) {
     console.error('POST /api/scenarios/refine:', error);
