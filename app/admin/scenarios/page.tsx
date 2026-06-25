@@ -24,13 +24,13 @@ export default function ScenariosPage() {
     load();
   }, [load]);
 
-  const toggleActive = async (id: string, current: string) => {
+  const toggleActive = async (id: string, current: string | boolean) => {
     setError(null);
     try {
       const res = await fetch(`/api/scenarios/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: current === 'true' ? 'false' : 'true' }),
+        body: JSON.stringify({ isActive: String(current) === 'true' ? 'false' : 'true' }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -142,12 +142,12 @@ export default function ScenariosPage() {
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        s.isActive === 'true'
+                        String(s.isActive) === 'true'
                           ? 'bg-green-500/10 text-green-700 dark:text-green-400'
                           : 'bg-muted text-muted-foreground'
                       }`}
                     >
-                      {s.isActive === 'true' ? 'Aktif' : 'Nonaktif'}
+                      {String(s.isActive) === 'true' ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </td>
                   <td className="text-muted-foreground px-4 py-3 text-xs">
@@ -172,10 +172,10 @@ export default function ScenariosPage() {
                       <button
                         onClick={() => toggleActive(s.id, s.isActive)}
                         className="hover:bg-accent rounded-md p-1.5 transition-colors"
-                        title={s.isActive === 'true' ? 'Nonaktifkan' : 'Aktifkan'}
+                        title={String(s.isActive) === 'true' ? 'Nonaktifkan' : 'Aktifkan'}
                       >
                         <Power
-                          className={`size-4 ${s.isActive === 'true' ? 'text-green-500' : 'text-muted-foreground'}`}
+                          className={`size-4 ${String(s.isActive) === 'true' ? 'text-green-500' : 'text-muted-foreground'}`}
                         />
                       </button>
                       <button

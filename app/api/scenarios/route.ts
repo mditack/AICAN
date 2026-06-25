@@ -31,7 +31,7 @@ export async function GET(req: Request) {
       .map((s, i) => ({ ...s, id: ids[i] }));
 
     if (activeOnly) {
-      scenarios = scenarios.filter((s) => s.isActive === 'true');
+      scenarios = scenarios.filter((s) => String(s.isActive) === 'true');
     }
 
     scenarios.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());

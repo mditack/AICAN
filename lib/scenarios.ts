@@ -10,7 +10,7 @@ export interface Scenario {
   rubricPrompt: string;
   voice: string;
   ttsProvider: TtsProvider;
-  isActive: string; // "true" | "false" — Redis stores strings
+  isActive: string | boolean; // Upstash deserializes "true"/"false" to boolean
   createdBy: string;
   createdAt: string; // ISO
   updatedAt: string; // ISO
