@@ -25,25 +25,35 @@ ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "pFZP5JQG7iQjIQuC4Bku")
 DEFAULT_TTS_PROVIDER = os.getenv("DEFAULT_TTS_PROVIDER", "gemini")
 
 
-def _fetch_prompts_from_api() -> dict | None:
-    """Fetch agent prompt, session prompt, voice, and ttsProvider from the API."""
+def _fetch_scenario_from_api(scenario_id: str | None) -> dict | None:
+    """Fetch scenario prompts from the API. Falls back to default scenario if no ID."""
     if not PROMPTS_API_URL or not PROMPTS_API_URL.startswith("http"):
         return None
+
+    base_url = PROMPTS_API_URL.rsplit("/api/", 1)[0]
+
     try:
-        r = requests.get(PROMPTS_API_URL, timeout=10)
+        if scenario_id:
+            url = f"{base_url}/api/scenarios/{scenario_id}"
+        else:
+            url = PROMPTS_API_URL  # fallback to /api/prompts
+
+        r = requests.get(url, timeout=10)
         r.raise_for_status()
         data = r.json()
-        agent = data.get("agentPrompt")
-        session = data.get("sessionPrompt")
-        if isinstance(agent, str) and isinstance(session, str):
+
+        agent_prompt = data.get("agentPrompt")
+        session_prompt = data.get("sessionPrompt")
+        if isinstance(agent_prompt, str) and isinstance(session_prompt, str):
             return {
-                "agent_prompt": agent,
-                "session_prompt": session,
+                "agent_prompt": agent_prompt,
+                "session_prompt": session_prompt,
+                "rubric_prompt": data.get("rubricPrompt", ""),
                 "voice": data.get("voice", ""),
                 "tts_provider": data.get("ttsProvider", DEFAULT_TTS_PROVIDER),
             }
     except Exception as e:
-        logger.warning("Failed to fetch prompts from API (%s), using defaults: %s", PROMPTS_API_URL, e)
+        logger.warning("Failed to fetch scenario (%s): %s", scenario_id, e)
     return None
 
 
@@ -97,10 +107,23 @@ server = AgentServer()
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def my_agent(ctx: agents.JobContext):
-    fetched = await asyncio.to_thread(_fetch_prompts_from_api)
+    # Read scenarioId from the first participant's metadata
+    scenario_id = None
+    for p in ctx.room.remote_participants.values():
+        try:
+            meta = json.loads(p.metadata or "{}")
+            scenario_id = meta.get("scenarioId")
+            if scenario_id:
+                break
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+    logger.info("Scenario ID from metadata: %s", scenario_id)
+    fetched = await asyncio.to_thread(_fetch_scenario_from_api, scenario_id)
 
     agent_prompt = fetched["agent_prompt"] if fetched else AGENT_PROMPT
     session_prompt = fetched["session_prompt"] if fetched else SESSION_PROMPT
+    rubric_prompt = fetched.get("rubric_prompt", "") if fetched else ""
     voice = fetched["voice"] if fetched else ""
     tts_provider = fetched["tts_provider"] if fetched else DEFAULT_TTS_PROVIDER
 
