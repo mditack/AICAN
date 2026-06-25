@@ -52,7 +52,10 @@ Jika suatu bagian TIDAK berubah, tetap sertakan versi aslinya. Semua output dala
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'AI refinement failed' }, { status: 502 });
+      const err = await res.text();
+      console.error('Gemini API error:', res.status, err);
+      const detail = err.length < 200 ? err : `Gemini ${res.status}`;
+      return NextResponse.json({ error: `AI refinement failed: ${detail}` }, { status: 502 });
     }
 
     const data = await res.json();
@@ -69,6 +72,7 @@ Jika suatu bagian TIDAK berubah, tetap sertakan versi aslinya. Semua output dala
     });
   } catch (error) {
     console.error('POST /api/scenarios/refine:', error);
-    return NextResponse.json({ error: 'Refinement failed' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Refinement failed: ${msg}` }, { status: 500 });
   }
 }

@@ -70,8 +70,9 @@ Buat agentPrompt, sessionPrompt, dan rubricPrompt sesuai instruksi.`;
 
     if (!res.ok) {
       const err = await res.text();
-      console.error('Gemini API error:', err);
-      return NextResponse.json({ error: 'AI generation failed' }, { status: 502 });
+      console.error('Gemini API error:', res.status, err);
+      const detail = err.length < 200 ? err : `Gemini ${res.status}`;
+      return NextResponse.json({ error: `AI generation failed: ${detail}` }, { status: 502 });
     }
 
     const data = await res.json();
@@ -88,6 +89,7 @@ Buat agentPrompt, sessionPrompt, dan rubricPrompt sesuai instruksi.`;
     });
   } catch (error) {
     console.error('POST /api/scenarios/generate:', error);
-    return NextResponse.json({ error: 'Generation failed' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Generation failed: ${msg}` }, { status: 500 });
   }
 }

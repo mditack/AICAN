@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/api/scenarios/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/scenarios/refine/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
