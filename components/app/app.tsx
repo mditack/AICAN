@@ -27,17 +27,17 @@ interface AppProps {
 
 export function App({ appConfig }: AppProps) {
   const avatarEnabledRef = useRef(true);
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string | undefined>();
+  const scenarioIdRef = useRef<string | undefined>();
 
   const tokenSource = useMemo(() => {
     const getOptions = () => ({
       avatarEnabled: avatarEnabledRef.current,
-      scenarioId: selectedScenarioId,
+      scenarioId: scenarioIdRef.current,
     });
     return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
       ? getSandboxTokenSource(appConfig, getOptions)
       : getLocalConnectionTokenSource(appConfig, getOptions);
-  }, [appConfig, selectedScenarioId]);
+  }, [appConfig]);
 
   const session = useSession(
     tokenSource,
@@ -51,7 +51,7 @@ export function App({ appConfig }: AppProps) {
         <ViewController
           appConfig={appConfig}
           avatarEnabledRef={avatarEnabledRef}
-          onSelectScenario={setSelectedScenarioId}
+          onSelectScenario={(id) => { scenarioIdRef.current = id; }}
         />
       </main>
       <StartAudioButton label="Start Audio" />

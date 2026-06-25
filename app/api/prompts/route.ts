@@ -60,8 +60,15 @@ export async function GET() {
       source: 'upstash',
     } satisfies StoredPrompts & { source: string });
   } catch (error) {
-    console.error('GET /api/prompts:', error);
-    return NextResponse.json({ error: 'Failed to load prompts' }, { status: 500 });
+    console.error('GET /api/prompts (falling back to defaults):', error);
+    const defaultProvider = DEFAULT_TTS_PROVIDER;
+    return NextResponse.json({
+      agentPrompt: DEFAULT_AGENT_PROMPT,
+      sessionPrompt: DEFAULT_SESSION_PROMPT,
+      voice: getDefaultVoice(defaultProvider),
+      ttsProvider: defaultProvider,
+      source: 'defaults',
+    });
   }
 }
 

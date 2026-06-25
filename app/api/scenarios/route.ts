@@ -38,8 +38,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json(scenarios);
   } catch (error) {
-    console.error('GET /api/scenarios:', error);
-    return NextResponse.json({ error: 'Failed to list scenarios' }, { status: 500 });
+    console.error('GET /api/scenarios (returning empty):', error);
+    return NextResponse.json([]);
   }
 }
 

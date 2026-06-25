@@ -45,5 +45,3 @@ next-env.d.ts
 .venv
 agent/.venv/
 
-.vercel
-.env*.local

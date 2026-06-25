@@ -26,6 +26,7 @@ export default function NewScenarioPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('context');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Context form
   const [name, setName] = useState('');
@@ -53,6 +54,7 @@ export default function NewScenarioPage() {
 
   const generate = async () => {
     setStep('generating');
+    setError(null);
     try {
       const res = await fetch('/api/scenarios/generate', {
         method: 'POST',
@@ -68,13 +70,17 @@ export default function NewScenarioPage() {
           category,
         }),
       });
-      if (!res.ok) throw new Error('Generation failed');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Generation failed (${res.status})`);
+      }
       const data = await res.json();
       setAgentPrompt(data.agentPrompt || '');
       setSessionPrompt(data.sessionPrompt || '');
       setRubricPrompt(data.rubricPrompt || '');
       setStep('prompts');
-    } catch {
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'AI generation gagal');
       setStep('context');
     }
   };
@@ -113,6 +119,7 @@ export default function NewScenarioPage() {
 
   const saveScenario = async () => {
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch('/api/scenarios', {
         method: 'POST',
@@ -130,9 +137,13 @@ export default function NewScenarioPage() {
           createdBy: 'admin',
         }),
       });
-      if (!res.ok) throw new Error('Save failed');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Save failed (${res.status})`);
+      }
       router.push('/admin/scenarios');
-    } finally {
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menyimpan skenario');
       setSaving(false);
     }
   };
@@ -157,6 +168,12 @@ export default function NewScenarioPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="border-destructive/30 bg-destructive/10 text-destructive mb-6 rounded-lg border px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Step: Context Form */}
       {step === 'context' && (
