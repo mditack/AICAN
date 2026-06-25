@@ -4,10 +4,7 @@ import { REDIS_KEYS } from '@/lib/scenarios';
 
 export const revalidate = 0;
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const redis = getRedis();

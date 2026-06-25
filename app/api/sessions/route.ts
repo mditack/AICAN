@@ -15,10 +15,7 @@ export async function POST(req: Request) {
     const { scenarioId, participantName, score, feedback } = body;
 
     if (!scenarioId || score === undefined) {
-      return NextResponse.json(
-        { error: 'scenarioId and score are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'scenarioId and score are required' }, { status: 400 });
     }
 
     const sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
