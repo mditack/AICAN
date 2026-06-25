@@ -104,13 +104,13 @@ export const WelcomeView = ({
           variants={staggerItem}
           className="text-muted-foreground mt-2 max-w-xs text-sm leading-relaxed md:text-base"
         >
-          {scenarios.length > 1
+          {scenarios.length > 0
             ? 'Pilih skenario roleplay lalu mulai percakapan'
             : 'Mulai percakapan dengan AI companion Anda'}
         </motion.p>
 
         {/* Scenario cards */}
-        {!loadingScenarios && scenarios.length > 1 && (
+        {!loadingScenarios && scenarios.length > 0 && (
           <motion.div
             variants={staggerItem}
             className="mt-6 grid w-full max-w-md gap-3 sm:grid-cols-2"
@@ -136,7 +136,7 @@ export const WelcomeView = ({
           variants={staggerItem}
           size="lg"
           onClick={handleStart}
-          disabled={scenarios.length > 1 && !selectedId}
+          disabled={scenarios.length > 0 && !selectedId}
           className="bg-brand shadow-brand-glow hover:bg-brand-light hover:shadow-brand-glow mt-8 w-64 cursor-pointer rounded-full font-mono text-xs font-bold tracking-wider text-white uppercase shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50"
         >
           <Microphone weight="bold" className="mr-1 size-4" />
