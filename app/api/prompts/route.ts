@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'Upstash Redis not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.',
+            'Upstash Redis not configured. Set UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN or KV_REST_API_URL/KV_REST_API_TOKEN.',
         },
         { status: 503 }
       );
