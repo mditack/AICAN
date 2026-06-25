@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { getRedis } from '@/lib/redis';
+import { ensureString, getRedis } from '@/lib/redis';
 import { REDIS_KEYS, type Scenario, type ScenarioInput } from '@/lib/scenarios';
 
 export const revalidate = 0;
@@ -28,7 +28,13 @@ export async function GET(req: Request) {
 
     let scenarios = results
       .filter((s): s is Scenario => s !== null && typeof s.name === 'string')
-      .map((s, i) => ({ ...s, id: ids[i] }));
+      .map((s, i) => ({
+        ...s,
+        id: ids[i],
+        agentPrompt: ensureString(s.agentPrompt),
+        sessionPrompt: ensureString(s.sessionPrompt),
+        rubricPrompt: ensureString(s.rubricPrompt),
+      }));
 
     if (activeOnly) {
       scenarios = scenarios.filter((s) => String(s.isActive) === 'true');

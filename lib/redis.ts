@@ -6,3 +6,9 @@ export function getRedis(): Redis | null {
   if (!url || !token) return null;
   return new Redis({ url, token });
 }
+
+export function ensureString(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (v === null || v === undefined) return '';
+  return JSON.stringify(v, null, 2);
+}

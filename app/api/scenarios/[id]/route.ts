@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRedis } from '@/lib/redis';
+import { ensureString, getRedis } from '@/lib/redis';
 import type { Scenario } from '@/lib/scenarios';
 import { REDIS_KEYS } from '@/lib/scenarios';
 
@@ -18,7 +18,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Scenario not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ ...scenario, id });
+    return NextResponse.json({
+      ...scenario,
+      id,
+      agentPrompt: ensureString(scenario.agentPrompt),
+      sessionPrompt: ensureString(scenario.sessionPrompt),
+      rubricPrompt: ensureString(scenario.rubricPrompt),
+    });
   } catch (error) {
     console.error('GET /api/scenarios/[id]:', error);
     return NextResponse.json({ error: 'Failed to get scenario' }, { status: 500 });
@@ -62,7 +68,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await redis.hset(REDIS_KEYS.scenario(id), updates);
     const updated = (await redis.hgetall(REDIS_KEYS.scenario(id))) as Scenario | null;
 
-    return NextResponse.json({ ...updated, id });
+    return NextResponse.json({
+      ...updated,
+      id,
+      agentPrompt: ensureString(updated?.agentPrompt),
+      sessionPrompt: ensureString(updated?.sessionPrompt),
+      rubricPrompt: ensureString(updated?.rubricPrompt),
+    });
   } catch (error) {
     console.error('PUT /api/scenarios/[id]:', error);
     return NextResponse.json({ error: 'Failed to update scenario' }, { status: 500 });
