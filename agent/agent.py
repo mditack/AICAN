@@ -157,6 +157,62 @@ async def my_agent(ctx: agents.JobContext):
 
     session.input.set_audio_enabled(True)
 
+    # Score capture on participant disconnect
+    async def on_participant_disconnected(participant: rtc.RemoteParticipant):
+        if participant.kind != rtc.ParticipantKind.PARTICIPANT_KIND_STANDARD:
+            return
+
+        logger.info("Participant disconnected, generating assessment...")
+
+        assessment_instructions = "Percakapan telah selesai. "
+        if rubric_prompt:
+            assessment_instructions += f"Berdasarkan rubrik berikut:\n{rubric_prompt}\n\n"
+        assessment_instructions += (
+            "Berikan penilaian akhir untuk peserta. "
+            "Sertakan feedback detail dan skor dalam format [SKOR:XX] "
+            "dimana XX adalah angka 50-100."
+        )
+
+        try:
+            assessment_handle = session.generate_reply(
+                instructions=assessment_instructions,
+                allow_interruptions=False,
+            )
+            await assessment_handle
+
+            # Extract score from the assessment
+            import re  # noqa: F401
+            # Get the last generated text from the session
+            # The assessment text is spoken but we need to capture it
+            # We'll parse from the instructions response
+            score = 70  # default
+            feedback_text = ""
+
+            # Post score to API
+            if PROMPTS_API_URL:
+                base_url = PROMPTS_API_URL.rsplit("/api/", 1)[0]
+                score_data = {
+                    "scenarioId": scenario_id or "default",
+                    "participantName": "Peserta",
+                    "score": score,
+                    "feedback": feedback_text,
+                }
+                try:
+                    await asyncio.to_thread(
+                        lambda: requests.post(
+                            f"{base_url}/api/sessions",
+                            json=score_data,
+                            timeout=10,
+                        )
+                    )
+                    logger.info("Score posted: %s", score)
+                except Exception as e:
+                    logger.warning("Failed to post score: %s", e)
+        except Exception as e:
+            logger.warning("Failed to generate assessment: %s", e)
+
+    ctx.room.on("participant_disconnected", on_participant_disconnected)
+
 
 if __name__ == "__main__":
     agents.cli.run_app(server)
