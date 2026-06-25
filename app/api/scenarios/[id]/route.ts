@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
-import { REDIS_KEYS, type Scenario } from '@/lib/scenarios';
+import type { Scenario } from '@/lib/scenarios';
+import { REDIS_KEYS } from '@/lib/scenarios';
 
 export const revalidate = 0;
 
@@ -12,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Redis not configured' }, { status: 503 });
     }
 
-    const scenario = await redis.hgetall<Scenario>(REDIS_KEYS.scenario(id));
+    const scenario = (await redis.hgetall(REDIS_KEYS.scenario(id))) as Scenario | null;
     if (!scenario || !scenario.name) {
       return NextResponse.json({ error: 'Scenario not found' }, { status: 404 });
     }
@@ -59,7 +60,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     await redis.hset(REDIS_KEYS.scenario(id), updates);
-    const updated = await redis.hgetall<Scenario>(REDIS_KEYS.scenario(id));
+    const updated = (await redis.hgetall(REDIS_KEYS.scenario(id))) as Scenario | null;
 
     return NextResponse.json({ ...updated, id });
   } catch (error) {

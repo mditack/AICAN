@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
     const pipeline = redis.pipeline();
     pipeline.sadd(REDIS_KEYS.scenarios, id);
-    pipeline.hset(REDIS_KEYS.scenario(id), scenario);
+    pipeline.hset(REDIS_KEYS.scenario(id), scenario as unknown as Record<string, string>);
     await pipeline.exec();
 
     return NextResponse.json(scenario, { status: 201 });
