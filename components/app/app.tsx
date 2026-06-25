@@ -27,7 +27,7 @@ interface AppProps {
 
 export function App({ appConfig }: AppProps) {
   const avatarEnabledRef = useRef(true);
-  const scenarioIdRef = useRef<string | undefined>();
+  const scenarioIdRef = useRef<string | undefined>(undefined);
 
   const tokenSource = useMemo(() => {
     const getOptions = () => ({
