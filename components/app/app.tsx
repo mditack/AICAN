@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSession } from '@livekit/components-react';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import type { AppConfig } from '@/app-config';
@@ -27,13 +27,17 @@ interface AppProps {
 
 export function App({ appConfig }: AppProps) {
   const avatarEnabledRef = useRef(true);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string | undefined>();
 
   const tokenSource = useMemo(() => {
-    const getOptions = () => ({ avatarEnabled: avatarEnabledRef.current });
+    const getOptions = () => ({
+      avatarEnabled: avatarEnabledRef.current,
+      scenarioId: selectedScenarioId,
+    });
     return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
       ? getSandboxTokenSource(appConfig, getOptions)
       : getLocalConnectionTokenSource(appConfig, getOptions);
-  }, [appConfig]);
+  }, [appConfig, selectedScenarioId]);
 
   const session = useSession(
     tokenSource,
@@ -44,7 +48,11 @@ export function App({ appConfig }: AppProps) {
     <AgentSessionProvider session={session}>
       <AppSetup />
       <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} avatarEnabledRef={avatarEnabledRef} />
+        <ViewController
+          appConfig={appConfig}
+          avatarEnabledRef={avatarEnabledRef}
+          onSelectScenario={setSelectedScenarioId}
+        />
       </main>
       <StartAudioButton label="Start Audio" />
       <Toaster

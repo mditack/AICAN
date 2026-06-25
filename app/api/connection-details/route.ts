@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       body?.room_config?.agents?.[0]?.agent_name ?? body?.agentName;
     const avatarEnabled =
       body?.avatar_enabled !== undefined ? body.avatar_enabled : body?.avatarEnabled !== false;
+    const scenarioId: string | undefined = body?.scenarioId;
 
     // Generate participant token
     const participantName = 'user';
@@ -45,7 +46,8 @@ export async function POST(req: Request) {
       { identity: participantIdentity, name: participantName },
       roomName,
       agentName,
-      avatarEnabled
+      avatarEnabled,
+      scenarioId
     );
 
     // Return connection details
@@ -71,13 +73,14 @@ function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
   agentName?: string,
-  avatarEnabled: boolean = true
+  avatarEnabled: boolean = true,
+  scenarioId?: string
 ): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, {
     ...userInfo,
     ttl: '15m',
   });
-  at.metadata = JSON.stringify({ avatarEnabled });
+  at.metadata = JSON.stringify({ avatarEnabled, scenarioId });
 
   const grant: VideoGrant = {
     room: roomName,
