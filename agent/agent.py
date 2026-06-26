@@ -9,6 +9,8 @@ import json
 import logging
 import os
 
+import re
+
 import requests
 from dotenv import load_dotenv
 from livekit import agents, rtc
@@ -125,23 +127,22 @@ server = AgentServer()
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def my_agent(ctx: agents.JobContext):
+    # Wait for user participant to join so we can read their metadata
+    participant = await ctx.wait_for_participant()
+    logger.info("Participant joined: %s, metadata: %s", participant.identity, participant.metadata)
+
     # Read scenarioId and scenario prompts from participant metadata
     scenario_id = None
     fetched = None
 
-    for p in ctx.room.remote_participants.values():
-        try:
-            meta = json.loads(p.metadata or "{}")
-            scenario_id = meta.get("scenarioId")
-            # Try to get prompts directly from metadata (injected by connection-details)
-            fetched = _extract_scenario_from_metadata(meta)
-            if fetched:
-                logger.info("Got scenario prompts from metadata (id=%s)", scenario_id)
-                break
-            if scenario_id:
-                break
-        except (json.JSONDecodeError, AttributeError):
-            pass
+    try:
+        meta = json.loads(participant.metadata or "{}")
+        scenario_id = meta.get("scenarioId")
+        fetched = _extract_scenario_from_metadata(meta)
+        if fetched:
+            logger.info("Got scenario prompts from metadata (id=%s)", scenario_id)
+    except (json.JSONDecodeError, AttributeError):
+        pass
 
     # Fallback: fetch from API if not embedded in metadata
     if not fetched:
@@ -184,39 +185,63 @@ async def my_agent(ctx: agents.JobContext):
 
     session.input.set_audio_enabled(True)
 
-    # Score capture on participant disconnect
-    async def on_participant_disconnected(participant: rtc.RemoteParticipant):
-        if participant.kind != rtc.ParticipantKind.PARTICIPANT_KIND_STANDARD:
-            return
+    # Generate assessment and post to API on participant disconnect
+    async def _generate_and_post_assessment():
+        logger.info("Generating text assessment via Gemini LLM...")
 
-        logger.info("Participant disconnected, generating assessment...")
-
-        assessment_instructions = "Percakapan telah selesai. "
+        assessment_prompt = "Percakapan roleplay telah selesai. "
         if rubric_prompt:
-            assessment_instructions += f"Berdasarkan rubrik berikut:\n{rubric_prompt}\n\n"
-        assessment_instructions += (
-            "Berikan penilaian akhir untuk peserta. "
-            "Sertakan feedback detail dan skor dalam format [SKOR:XX] "
-            "dimana XX adalah angka 50-100."
+            assessment_prompt += f"Berdasarkan rubrik berikut:\n{rubric_prompt}\n\n"
+        assessment_prompt += (
+            "Berikan penilaian akhir untuk peserta dalam bahasa Indonesia. "
+            "Format respons HANYA sebagai JSON (tanpa markdown, tanpa teks lain) dengan field: "
+            '"score" (angka 50-100), '
+            '"feedback" (string berisi feedback keseluruhan 2-3 kalimat), '
+            '"strengths" (array string, maks 3 kekuatan peserta), '
+            '"improvements" (array string, maks 3 area yang perlu diperbaiki).'
         )
 
         try:
-            assessment_handle = session.generate_reply(
-                instructions=assessment_instructions,
-                allow_interruptions=False,
-            )
-            await assessment_handle
+            llm = google.LLM(model="gemini-2.5-flash", temperature=0.7)
+            from livekit.agents.llm import ChatContext
 
-            score = 70  # default
-            feedback_text = ""
+            chat_ctx = ChatContext()
+            chat_ctx.add_message(role="user", content=assessment_prompt)
+            stream = llm.chat(chat_ctx=chat_ctx)
 
+            response_text = ""
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    response_text += chunk.choices[0].delta.content
+
+            logger.info("Assessment raw: %s", response_text[:300])
+
+            score = 70
+            feedback_text = response_text
+            try:
+                clean = response_text.strip()
+                if clean.startswith("```"):
+                    clean = re.sub(r"^```(?:json)?\s*", "", clean)
+                    clean = re.sub(r"\s*```$", "", clean)
+                parsed = json.loads(clean)
+                score = max(50, min(100, int(parsed.get("score", 70))))
+                feedback_text = json.dumps(parsed, ensure_ascii=False)
+            except (json.JSONDecodeError, ValueError, TypeError):
+                m = re.search(r"\b(\d{2,3})\b", response_text)
+                if m:
+                    val = int(m.group(1))
+                    if 50 <= val <= 100:
+                        score = val
+
+            # Post assessment to sessions API
             if PROMPTS_API_URL:
                 base_url = PROMPTS_API_URL.rsplit("/api/", 1)[0]
                 score_data = {
                     "scenarioId": scenario_id or "default",
-                    "participantName": "Peserta",
+                    "participantName": participant.name or "Peserta",
                     "score": score,
                     "feedback": feedback_text,
+                    "roomName": ctx.room.name,
                 }
                 try:
                     await asyncio.to_thread(
@@ -226,11 +251,15 @@ async def my_agent(ctx: agents.JobContext):
                             timeout=10,
                         )
                     )
-                    logger.info("Score posted: %s", score)
+                    logger.info("Assessment posted to API, score=%s", score)
                 except Exception as e:
-                    logger.warning("Failed to post score: %s", e)
+                    logger.warning("Failed to post assessment: %s", e)
         except Exception as e:
             logger.warning("Failed to generate assessment: %s", e)
+
+    def on_participant_disconnected(p: rtc.RemoteParticipant):
+        if p.kind == rtc.ParticipantKind.PARTICIPANT_KIND_STANDARD:
+            asyncio.create_task(_generate_and_post_assessment())
 
     ctx.room.on("participant_disconnected", on_participant_disconnected)
 

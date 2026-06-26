@@ -21,11 +21,14 @@ export async function POST(req: Request) {
     const sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const now = new Date().toISOString();
 
+    const roomName = body.roomName || '';
+
     const sessionData = {
       scenarioId,
       participantName: participantName || 'Anonymous',
       score: String(score),
       feedback: feedback || '',
+      roomName,
       startedAt: body.startedAt || now,
       endedAt: now,
     };
@@ -35,6 +38,9 @@ export async function POST(req: Request) {
     pipeline.zadd(REDIS_KEYS.sessions(scenarioId), { score: Number(score), member: sessionId });
     pipeline.lpush(REDIS_KEYS.recentSessions, sessionId);
     pipeline.ltrim(REDIS_KEYS.recentSessions, 0, 499);
+    if (roomName) {
+      pipeline.set(`session:room:${roomName}`, sessionId);
+    }
     await pipeline.exec();
 
     return NextResponse.json({ sessionId, ...sessionData }, { status: 201 });
@@ -52,9 +58,23 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
+    const roomName = searchParams.get('roomName');
     const scenarioId = searchParams.get('scenarioId');
     const limit = Math.min(Number(searchParams.get('limit') || '50'), 200);
     const offset = Number(searchParams.get('offset') || '0');
+
+    // Lookup by roomName — returns single session or null
+    if (roomName) {
+      const sessionId = await redis.get<string>(`session:room:${roomName}`);
+      if (!sessionId) {
+        return NextResponse.json(null);
+      }
+      const data = await redis.hgetall(REDIS_KEYS.session(sessionId));
+      if (!data) {
+        return NextResponse.json(null);
+      }
+      return NextResponse.json({ id: sessionId, ...data });
+    }
 
     let sessionIds: string[];
 
