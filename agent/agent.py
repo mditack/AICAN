@@ -210,9 +210,8 @@ async def my_agent(ctx: agents.JobContext):
             stream = llm.chat(chat_ctx=chat_ctx)
 
             response_text = ""
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    response_text += chunk.choices[0].delta.content
+            async for text in stream.to_str_iterable():
+                response_text += text
 
             logger.info("Assessment raw: %s", response_text[:300])
 
