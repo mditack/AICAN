@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
+import { ensureString, getRedis } from '@/lib/redis';
+import { REDIS_KEYS } from '@/lib/scenarios';
 
 type ConnectionDetails = {
   serverUrl: string;
@@ -9,13 +11,32 @@ type ConnectionDetails = {
   participantToken: string;
 };
 
-// NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
-// don't cache the results
 export const revalidate = 0;
+
+async function fetchScenarioPrompts(scenarioId?: string) {
+  if (!scenarioId) return null;
+  const redis = getRedis();
+  if (!redis) return null;
+
+  try {
+    const data = await redis.hgetall(REDIS_KEYS.scenario(scenarioId));
+    if (!data || !data.agentPrompt) return null;
+    return {
+      agentPrompt: ensureString(data.agentPrompt),
+      sessionPrompt: ensureString(data.sessionPrompt),
+      rubricPrompt: ensureString(data.rubricPrompt),
+      voice: typeof data.voice === 'string' ? data.voice : '',
+      ttsProvider: typeof data.ttsProvider === 'string' ? data.ttsProvider : 'gemini',
+    };
+  } catch (e) {
+    console.error('Failed to fetch scenario:', e);
+    return null;
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +50,6 @@ export async function POST(req: Request) {
       throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
-    // Parse agent configuration and avatar preference from request body
     const body = await req.json();
     const agentName: string | undefined =
       body?.room_config?.agents?.[0]?.agent_name ?? body?.agentName;
@@ -37,20 +57,24 @@ export async function POST(req: Request) {
       body?.avatar_enabled !== undefined ? body.avatar_enabled : body?.avatarEnabled !== false;
     const scenarioId: string | undefined = body?.scenarioId;
 
-    // Generate participant token
+    const scenario = await fetchScenarioPrompts(scenarioId);
+
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
     const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+
+    const metadata: Record<string, unknown> = { avatarEnabled, scenarioId };
+    if (scenario) {
+      metadata.scenario = scenario;
+    }
 
     const participantToken = await createParticipantToken(
       { identity: participantIdentity, name: participantName },
       roomName,
       agentName,
-      avatarEnabled,
-      scenarioId
+      JSON.stringify(metadata)
     );
 
-    // Return connection details
     const data: ConnectionDetails = {
       serverUrl: LIVEKIT_URL,
       roomName,
@@ -73,14 +97,13 @@ function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
   agentName?: string,
-  avatarEnabled: boolean = true,
-  scenarioId?: string
+  metadata?: string
 ): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, {
     ...userInfo,
     ttl: '15m',
   });
-  at.metadata = JSON.stringify({ avatarEnabled, scenarioId });
+  at.metadata = metadata || '{}';
 
   const grant: VideoGrant = {
     room: roomName,

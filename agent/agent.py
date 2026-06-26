@@ -25,6 +25,24 @@ ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "pFZP5JQG7iQjIQuC4Bku")
 DEFAULT_TTS_PROVIDER = os.getenv("DEFAULT_TTS_PROVIDER", "gemini")
 
 
+def _extract_scenario_from_metadata(metadata: dict) -> dict | None:
+    """Extract scenario prompts embedded directly in participant metadata."""
+    scenario = metadata.get("scenario")
+    if not scenario or not isinstance(scenario, dict):
+        return None
+    agent_prompt = scenario.get("agentPrompt")
+    session_prompt = scenario.get("sessionPrompt")
+    if isinstance(agent_prompt, str) and isinstance(session_prompt, str):
+        return {
+            "agent_prompt": agent_prompt,
+            "session_prompt": session_prompt,
+            "rubric_prompt": scenario.get("rubricPrompt", ""),
+            "voice": scenario.get("voice", ""),
+            "tts_provider": scenario.get("ttsProvider", DEFAULT_TTS_PROVIDER),
+        }
+    return None
+
+
 def _fetch_scenario_from_api(scenario_id: str | None) -> dict | None:
     """Fetch scenario prompts from the API. Falls back to default scenario if no ID."""
     if not PROMPTS_API_URL or not PROMPTS_API_URL.startswith("http"):
@@ -107,19 +125,28 @@ server = AgentServer()
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def my_agent(ctx: agents.JobContext):
-    # Read scenarioId from the first participant's metadata
+    # Read scenarioId and scenario prompts from participant metadata
     scenario_id = None
+    fetched = None
+
     for p in ctx.room.remote_participants.values():
         try:
             meta = json.loads(p.metadata or "{}")
             scenario_id = meta.get("scenarioId")
+            # Try to get prompts directly from metadata (injected by connection-details)
+            fetched = _extract_scenario_from_metadata(meta)
+            if fetched:
+                logger.info("Got scenario prompts from metadata (id=%s)", scenario_id)
+                break
             if scenario_id:
                 break
         except (json.JSONDecodeError, AttributeError):
             pass
 
-    logger.info("Scenario ID from metadata: %s", scenario_id)
-    fetched = await asyncio.to_thread(_fetch_scenario_from_api, scenario_id)
+    # Fallback: fetch from API if not embedded in metadata
+    if not fetched:
+        logger.info("Scenario ID from metadata: %s, fetching from API...", scenario_id)
+        fetched = await asyncio.to_thread(_fetch_scenario_from_api, scenario_id)
 
     agent_prompt = fetched["agent_prompt"] if fetched else AGENT_PROMPT
     session_prompt = fetched["session_prompt"] if fetched else SESSION_PROMPT
@@ -180,15 +207,9 @@ async def my_agent(ctx: agents.JobContext):
             )
             await assessment_handle
 
-            # Extract score from the assessment
-            import re  # noqa: F401
-            # Get the last generated text from the session
-            # The assessment text is spoken but we need to capture it
-            # We'll parse from the instructions response
             score = 70  # default
             feedback_text = ""
 
-            # Post score to API
             if PROMPTS_API_URL:
                 base_url = PROMPTS_API_URL.rsplit("/api/", 1)[0]
                 score_data = {
