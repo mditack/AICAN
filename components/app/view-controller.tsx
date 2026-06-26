@@ -79,10 +79,7 @@ export function ViewController({
       </AnimatePresence>
 
       {feedbackRoomName && (
-        <FeedbackModal
-          roomName={feedbackRoomName}
-          onClose={() => setFeedbackRoomName(null)}
-        />
+        <FeedbackModal roomName={feedbackRoomName} onClose={() => setFeedbackRoomName(null)} />
       )}
     </>
   );
