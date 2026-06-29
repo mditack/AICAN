@@ -50,7 +50,9 @@ export function FeedbackModal({ roomName, onClose }: FeedbackModalProps) {
                 score: Number(feedbackObj.score ?? data.score) || 70,
                 feedback: feedbackObj.feedback,
                 strengths: Array.isArray(feedbackObj.strengths) ? feedbackObj.strengths : [],
-                improvements: Array.isArray(feedbackObj.improvements) ? feedbackObj.improvements : [],
+                improvements: Array.isArray(feedbackObj.improvements)
+                  ? feedbackObj.improvements
+                  : [],
               };
             } else {
               parsed = {
