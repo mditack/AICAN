@@ -35,18 +35,27 @@ export function FeedbackModal({ roomName, onClose }: FeedbackModalProps) {
           const data = await res.json();
           if (data && data.feedback) {
             let parsed: AssessmentData;
-            try {
-              const feedbackObj = JSON.parse(data.feedback);
+            let feedbackObj: Record<string, unknown>;
+            if (typeof data.feedback === 'object' && data.feedback !== null) {
+              feedbackObj = data.feedback;
+            } else {
+              try {
+                feedbackObj = JSON.parse(data.feedback);
+              } catch {
+                feedbackObj = {};
+              }
+            }
+            if (feedbackObj && typeof feedbackObj.feedback === 'string') {
               parsed = {
-                score: feedbackObj.score ?? Number(data.score) ?? 70,
-                feedback: feedbackObj.feedback ?? '',
-                strengths: feedbackObj.strengths ?? [],
-                improvements: feedbackObj.improvements ?? [],
+                score: Number(feedbackObj.score ?? data.score) || 70,
+                feedback: feedbackObj.feedback,
+                strengths: Array.isArray(feedbackObj.strengths) ? feedbackObj.strengths : [],
+                improvements: Array.isArray(feedbackObj.improvements) ? feedbackObj.improvements : [],
               };
-            } catch {
+            } else {
               parsed = {
                 score: Number(data.score) || 70,
-                feedback: data.feedback,
+                feedback: typeof data.feedback === 'string' ? data.feedback : String(data.feedback),
                 strengths: [],
                 improvements: [],
               };

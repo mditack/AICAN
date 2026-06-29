@@ -1,6 +1,6 @@
 """
 AICAN voice agent — dual-mode (Indonesian).
-Mode 'gemini':     Gemini 2.5 Flash Native Audio (free, all-in-one)
+Mode 'gemini':     Gemini 3.1 Flash Live (free, all-in-one)
 Mode 'elevenlabs': Groq Whisper STT + Gemini Flash text LLM + ElevenLabs Flash TTS (pipeline)
 Deploy to LiveKit Cloud with: lk agent create
 """
@@ -8,8 +8,8 @@ import asyncio
 import json
 import logging
 import os
-
 import re
+import time
 
 import requests
 from dotenv import load_dotenv
@@ -18,13 +18,17 @@ from livekit.agents import AgentServer, AgentSession, Agent, room_io, TurnHandli
 from livekit.plugins import google, noise_cancellation
 from prompts import AGENT_PROMPT, SESSION_PROMPT
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.info("AICAN agent module loading...")
 load_dotenv(".env.local")
 
 AGENT_NAME = os.getenv("AGENT_NAME", "")
 PROMPTS_API_URL = os.getenv("PROMPTS_API_URL", "")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "pFZP5JQG7iQjIQuC4Bku")
 DEFAULT_TTS_PROVIDER = os.getenv("DEFAULT_TTS_PROVIDER", "gemini")
+UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "")
+UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 
 
 def _extract_scenario_from_metadata(metadata: dict) -> dict | None:
@@ -87,7 +91,7 @@ def _build_gemini_session(voice: str) -> AgentSession:
     gemini_voice = voice if voice and len(voice) < 30 else "Enceladus"
     return AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.5-flash-native-audio-preview-12-2025",
+            model="gemini-3.1-flash-live-preview",
             voice=gemini_voice,
             language="id-ID",
             temperature=1.0,
@@ -162,9 +166,10 @@ async def my_agent(ctx: agents.JobContext):
         logger.info("Using Gemini native audio mode (voice=%s)", voice)
         session = _build_gemini_session(voice)
 
+    combined_instructions = agent_prompt + "\n\n" + session_prompt
     await session.start(
         room=ctx.room,
-        agent=Assistant(instructions=agent_prompt),
+        agent=Assistant(instructions=combined_instructions),
         room_options=room_io.RoomOptions(
             text_input=True,
             audio_input=room_io.AudioInputOptions(
@@ -175,17 +180,7 @@ async def my_agent(ctx: agents.JobContext):
         ),
     )
 
-    session.input.set_audio_enabled(False)
-
-    intro_handle = session.generate_reply(
-        instructions=session_prompt,
-        allow_interruptions=False,
-    )
-    await intro_handle
-
-    session.input.set_audio_enabled(True)
-
-    # Generate assessment and post to API on participant disconnect
+    # Generate assessment and store directly in Redis on participant disconnect
     async def _generate_and_post_assessment():
         logger.info("Generating text assessment via Gemini LLM...")
 
@@ -232,27 +227,46 @@ async def my_agent(ctx: agents.JobContext):
                     if 50 <= val <= 100:
                         score = val
 
-            # Post assessment to sessions API
-            if PROMPTS_API_URL:
-                base_url = PROMPTS_API_URL.rsplit("/api/", 1)[0]
-                score_data = {
-                    "scenarioId": scenario_id or "default",
-                    "participantName": participant.name or "Peserta",
-                    "score": score,
-                    "feedback": feedback_text,
-                    "roomName": ctx.room.name,
-                }
+            # Write assessment directly to Upstash Redis
+            if UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN:
+                import random
+                import string
+                now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+                rand_suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
+                session_id = f"sess_{int(time.time() * 1000)}_{rand_suffix}"
+                sid = scenario_id or "default"
+                room_name = ctx.room.name
+                name = participant.name or "Peserta"
+
+                pipeline_cmds = [
+                    ["HSET", f"aican:session:{session_id}",
+                     "scenarioId", sid,
+                     "participantName", name,
+                     "score", str(score),
+                     "feedback", feedback_text,
+                     "roomName", room_name,
+                     "startedAt", now,
+                     "endedAt", now],
+                    ["ZADD", f"aican:sessions:{sid}", str(score), session_id],
+                    ["LPUSH", "aican:sessions:recent", session_id],
+                    ["LTRIM", "aican:sessions:recent", "0", "499"],
+                    ["SET", f"session:room:{room_name}", session_id],
+                ]
                 try:
-                    await asyncio.to_thread(
+                    resp = await asyncio.to_thread(
                         lambda: requests.post(
-                            f"{base_url}/api/sessions",
-                            json=score_data,
+                            f"{UPSTASH_REDIS_REST_URL}/pipeline",
+                            headers={"Authorization": f"Bearer {UPSTASH_REDIS_REST_TOKEN}"},
+                            json=pipeline_cmds,
                             timeout=10,
                         )
                     )
-                    logger.info("Assessment posted to API, score=%s", score)
+                    logger.info("Assessment saved to Redis, score=%s, status=%s, session=%s",
+                                score, resp.status_code, session_id)
                 except Exception as e:
-                    logger.warning("Failed to post assessment: %s", e)
+                    logger.warning("Failed to save assessment to Redis: %s", e)
+            else:
+                logger.warning("Redis credentials not configured, skipping assessment storage")
         except Exception as e:
             logger.warning("Failed to generate assessment: %s", e)
 
