@@ -15,6 +15,7 @@ import requests
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import AgentServer, AgentSession, Agent, room_io, TurnHandlingOptions
+from livekit.agents.voice.room_io.types import TextInputEvent
 from livekit.plugins import google, noise_cancellation
 from prompts import AGENT_PROMPT, SESSION_PROMPT
 
@@ -166,12 +167,46 @@ async def my_agent(ctx: agents.JobContext):
         logger.info("Using Gemini native audio mode (voice=%s)", voice)
         session = _build_gemini_session(voice)
 
+    # Custom text-input callback: works around gemini-3.1-flash-live-preview
+    # having mutable_chat_context=False (which makes the default cb's
+    # generate_reply(user_input=...) a no-op). We inject the message
+    # directly into the realtime session as a completed user turn.
+    async def _text_input_cb(sess: AgentSession, ev: TextInputEvent) -> None:
+        try:
+            rt = sess._activity.realtime_llm_session if sess._activity else None
+        except AttributeError:
+            rt = None
+
+        if rt is None:
+            async with sess._claim_user_turn():
+                await sess.interrupt()
+                sess.generate_reply(user_input=ev.text)
+            return
+
+        try:
+            from google.genai import types as gtypes
+
+            async with sess._claim_user_turn():
+                await sess.interrupt()
+                turn = gtypes.Content(
+                    parts=[gtypes.Part(text=ev.text)],
+                    role="user",
+                )
+                rt._send_client_event(
+                    gtypes.LiveClientContent(turns=[turn], turn_complete=True)
+                )
+        except Exception as e:
+            logger.warning("Custom text_input_cb failed, falling back: %s", e)
+            async with sess._claim_user_turn():
+                await sess.interrupt()
+                sess.generate_reply(user_input=ev.text)
+
     combined_instructions = agent_prompt + "\n\n" + session_prompt
     await session.start(
         room=ctx.room,
         agent=Assistant(instructions=combined_instructions),
         room_options=room_io.RoomOptions(
-            text_input=True,
+            text_input=room_io.TextInputOptions(text_input_cb=_text_input_cb),
             audio_input=room_io.AudioInputOptions(
                 noise_cancellation=lambda params: noise_cancellation.BVCTelephony()
                 if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
