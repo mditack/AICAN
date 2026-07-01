@@ -186,14 +186,27 @@ async def my_agent(ctx: agents.JobContext):
 
         assessment_prompt = "Percakapan roleplay telah selesai. "
         if rubric_prompt:
-            assessment_prompt += f"Berdasarkan rubrik berikut:\n{rubric_prompt}\n\n"
+            assessment_prompt += (
+                f"Rubrik penilaian:\n{rubric_prompt}\n\n"
+                "Identifikasi 3-6 kriteria evaluasi dari rubrik di atas. "
+            )
+        else:
+            assessment_prompt += (
+                "Gunakan 4 kriteria evaluasi default: "
+                '"Membangun rapport", "Menggali kebutuhan", "Menyampaikan solusi", "Menangani keberatan". '
+            )
         assessment_prompt += (
             "Berikan penilaian akhir untuk peserta dalam bahasa Indonesia. "
             "Format respons HANYA sebagai JSON (tanpa markdown, tanpa teks lain) dengan field: "
-            '"score" (angka 50-100), '
+            '"score" (angka 0-100, skor keseluruhan), '
             '"feedback" (string berisi feedback keseluruhan 2-3 kalimat), '
-            '"strengths" (array string, maks 3 kekuatan peserta), '
-            '"improvements" (array string, maks 3 area yang perlu diperbaiki).'
+            '"criteria" (array objek dengan field: '
+            '"name" string nama kriteria, '
+            '"score" angka 0 hingga maxScore, '
+            '"maxScore" angka 5, '
+            '"feedback" string 2-4 kalimat menjelaskan penilaian dengan referensi ke perilaku spesifik peserta), '
+            '"strengths" (array string, 2-4 kekuatan spesifik peserta), '
+            '"improvements" (array string, 2-4 area yang perlu diperbaiki dengan saran konkret).'
         )
 
         try:
