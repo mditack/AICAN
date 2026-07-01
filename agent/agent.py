@@ -244,7 +244,7 @@ async def my_agent(ctx: agents.JobContext):
             '"improvements" (array string, 2-4 area yang perlu diperbaiki dengan saran konkret).'
         )
 
-        try:
+        async def _call_llm_once() -> str:
             llm = google.LLM(model="gemini-2.5-flash", temperature=0.7)
             from livekit.agents.llm import ChatContext
 
@@ -253,70 +253,99 @@ async def my_agent(ctx: agents.JobContext):
             stream = llm.chat(chat_ctx=chat_ctx)
 
             response_text = ""
-            async for text in stream.to_str_iterable():
-                response_text += text
+            async for text_chunk in stream.to_str_iterable():
+                response_text += text_chunk
+            return response_text
 
+        response_text = ""
+        last_err: Exception | None = None
+        for attempt in range(3):
+            try:
+                response_text = await asyncio.wait_for(_call_llm_once(), timeout=45)
+                break
+            except Exception as e:
+                last_err = e
+                logger.warning("LLM assessment attempt %s failed: %s", attempt + 1, e)
+                if attempt < 2:
+                    await asyncio.sleep(1.5 * (attempt + 1))
+
+        # Default fallback assessment if all LLM attempts failed
+        score = 0
+        feedback_text = json.dumps(
+            {
+                "score": 0,
+                "feedback": (
+                    "Penilaian otomatis sedang tidak tersedia. Silakan coba sesi lagi "
+                    "atau hubungi administrator jika masalah berlanjut."
+                ),
+                "criteria": [],
+                "strengths": [],
+                "improvements": [],
+            },
+            ensure_ascii=False,
+        )
+
+        if response_text:
             logger.info("Assessment raw: %s", response_text[:300])
-
-            score = 70
-            feedback_text = response_text
             try:
                 clean = response_text.strip()
                 if clean.startswith("```"):
                     clean = re.sub(r"^```(?:json)?\s*", "", clean)
                     clean = re.sub(r"\s*```$", "", clean)
                 parsed = json.loads(clean)
-                score = max(50, min(100, int(parsed.get("score", 70))))
+                score = max(0, min(100, int(parsed.get("score", 0))))
                 feedback_text = json.dumps(parsed, ensure_ascii=False)
-            except (json.JSONDecodeError, ValueError, TypeError):
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                logger.warning("Failed to parse assessment JSON: %s", e)
                 m = re.search(r"\b(\d{2,3})\b", response_text)
                 if m:
                     val = int(m.group(1))
-                    if 50 <= val <= 100:
+                    if 0 <= val <= 100:
                         score = val
+        elif last_err:
+            logger.warning("All LLM attempts failed, saving fallback assessment: %s", last_err)
 
-            # Write assessment directly to Upstash Redis
-            if UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN:
-                import random
-                import string
-                now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
-                rand_suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
-                session_id = f"sess_{int(time.time() * 1000)}_{rand_suffix}"
-                sid = scenario_id or "default"
-                room_name = ctx.room.name
-                name = participant.name or "Peserta"
+        # Write assessment to Upstash Redis — always runs so frontend never hangs
+        if not (UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN):
+            logger.warning("Redis credentials not configured, skipping assessment storage")
+            return
 
-                pipeline_cmds = [
-                    ["HSET", f"aican:session:{session_id}",
-                     "scenarioId", sid,
-                     "participantName", name,
-                     "score", str(score),
-                     "feedback", feedback_text,
-                     "roomName", room_name,
-                     "startedAt", now,
-                     "endedAt", now],
-                    ["ZADD", f"aican:sessions:{sid}", str(score), session_id],
-                    ["LPUSH", "aican:sessions:recent", session_id],
-                    ["LTRIM", "aican:sessions:recent", "0", "499"],
-                    ["SET", f"session:room:{room_name}", session_id],
-                ]
-                try:
-                    resp = await asyncio.to_thread(
-                        lambda: requests.post(
-                            f"{UPSTASH_REDIS_REST_URL}/pipeline",
-                            headers={"Authorization": f"Bearer {UPSTASH_REDIS_REST_TOKEN}"},
-                            json=pipeline_cmds,
-                            timeout=10,
-                        )
-                    )
-                    logger.info("Assessment saved to Redis, score=%s, status=%s, session=%s",
-                                score, resp.status_code, session_id)
-                except Exception as e:
-                    logger.warning("Failed to save assessment to Redis: %s", e)
-            else:
-                logger.warning("Redis credentials not configured, skipping assessment storage")
+        import random
+        import string
+        now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+        rand_suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
+        session_id = f"sess_{int(time.time() * 1000)}_{rand_suffix}"
+        sid = scenario_id or "default"
+        room_name = ctx.room.name
+        name = participant.name or "Peserta"
+
+        pipeline_cmds = [
+            ["HSET", f"aican:session:{session_id}",
+             "scenarioId", sid,
+             "participantName", name,
+             "score", str(score),
+             "feedback", feedback_text,
+             "roomName", room_name,
+             "startedAt", now,
+             "endedAt", now],
+            ["ZADD", f"aican:sessions:{sid}", str(score), session_id],
+            ["LPUSH", "aican:sessions:recent", session_id],
+            ["LTRIM", "aican:sessions:recent", "0", "499"],
+            ["SET", f"session:room:{room_name}", session_id],
+        ]
+        try:
+            resp = await asyncio.to_thread(
+                lambda: requests.post(
+                    f"{UPSTASH_REDIS_REST_URL}/pipeline",
+                    headers={"Authorization": f"Bearer {UPSTASH_REDIS_REST_TOKEN}"},
+                    json=pipeline_cmds,
+                    timeout=10,
+                )
+            )
+            logger.info("Assessment saved to Redis, score=%s, status=%s, session=%s",
+                        score, resp.status_code, session_id)
         except Exception as e:
-            logger.warning("Failed to generate assessment: %s", e)
+            logger.warning("Failed to save assessment to Redis: %s", e)
 
     def on_participant_disconnected(p: rtc.RemoteParticipant):
         if p.kind == rtc.ParticipantKind.PARTICIPANT_KIND_STANDARD:
