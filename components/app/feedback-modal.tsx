@@ -114,7 +114,7 @@ export function FeedbackModal({ roomName, onClose }: FeedbackModalProps) {
     if (!roomName) return;
 
     let attempts = 0;
-    const maxAttempts = 15;
+    const maxAttempts = 45;
     let cancelled = false;
 
     const poll = async () => {

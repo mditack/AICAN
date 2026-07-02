@@ -291,13 +291,13 @@ async def my_agent(ctx: agents.JobContext):
         last_err: Exception | None = None
         for attempt in range(3):
             try:
-                response_text = await asyncio.wait_for(_call_llm_once(), timeout=45)
+                response_text = await asyncio.wait_for(_call_llm_once(), timeout=20)
                 break
             except Exception as e:
                 last_err = e
                 logger.warning("LLM assessment attempt %s failed: %s", attempt + 1, e)
                 if attempt < 2:
-                    await asyncio.sleep(1.5 * (attempt + 1))
+                    await asyncio.sleep(1.0)
 
         # Default fallback assessment if all LLM attempts failed
         score = 0
@@ -377,11 +377,17 @@ async def my_agent(ctx: agents.JobContext):
         except Exception as e:
             logger.warning("Failed to save assessment to Redis: %s", e)
 
-    def on_participant_disconnected(p: rtc.RemoteParticipant):
-        if p.kind == rtc.ParticipantKind.PARTICIPANT_KIND_STANDARD:
-            asyncio.create_task(_generate_and_post_assessment())
+    # Run assessment as a shutdown callback so the job lifecycle waits for it
+    # instead of being cancelled by the room closing.
+    async def _on_shutdown():
+        try:
+            await asyncio.wait_for(_generate_and_post_assessment(), timeout=90)
+        except asyncio.TimeoutError:
+            logger.warning("Assessment shutdown callback timed out after 90s")
+        except Exception as e:
+            logger.warning("Assessment shutdown callback failed: %s", e)
 
-    ctx.room.on("participant_disconnected", on_participant_disconnected)
+    ctx.add_shutdown_callback(_on_shutdown)
 
 
 if __name__ == "__main__":
