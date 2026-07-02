@@ -219,7 +219,34 @@ async def my_agent(ctx: agents.JobContext):
     async def _generate_and_post_assessment():
         logger.info("Generating text assessment via Gemini LLM...")
 
-        assessment_prompt = "Percakapan roleplay telah selesai. "
+        # Build transcript from session chat history
+        transcript_lines: list[str] = []
+        try:
+            history = session.history
+            for item in history.items:
+                role = getattr(item, "role", None)
+                text_content = getattr(item, "text_content", None)
+                if not role or not text_content:
+                    continue
+                if role == "user":
+                    speaker = "Peserta"
+                elif role in ("assistant", "model"):
+                    speaker = "Agen"
+                else:
+                    continue
+                transcript_lines.append(f"{speaker}: {text_content.strip()}")
+        except Exception as e:
+            logger.warning("Failed to read chat history: %s", e)
+
+        transcript = "\n".join(transcript_lines).strip()
+        logger.info("Transcript length: %d chars, %d lines", len(transcript), len(transcript_lines))
+
+        assessment_prompt = "Anda adalah evaluator roleplay. Berikut transkrip percakapan roleplay yang baru selesai:\n\n"
+        if transcript:
+            assessment_prompt += f"---\n{transcript}\n---\n\n"
+        else:
+            assessment_prompt += "(Transkrip percakapan tidak tersedia — kemungkinan sesi berakhir sebelum ada percakapan berarti.)\n\n"
+
         if rubric_prompt:
             assessment_prompt += (
                 f"Rubrik penilaian:\n{rubric_prompt}\n\n"
@@ -231,16 +258,19 @@ async def my_agent(ctx: agents.JobContext):
                 '"Membangun rapport", "Menggali kebutuhan", "Menyampaikan solusi", "Menangani keberatan". '
             )
         assessment_prompt += (
-            "Berikan penilaian akhir untuk peserta dalam bahasa Indonesia. "
+            "Berikan penilaian akhir untuk peserta (peran 'Peserta' di transkrip) dalam bahasa Indonesia "
+            "berdasarkan apa yang benar-benar mereka katakan di transkrip. "
+            "JANGAN membuat asumsi atau contoh hipotetis — nilai HANYA berdasarkan perilaku aktual di transkrip. "
+            "Jika transkrip terlalu pendek untuk evaluasi menyeluruh, tetap berikan penilaian jujur dengan skor rendah dan sebutkan kekurangannya. "
             "Format respons HANYA sebagai JSON (tanpa markdown, tanpa teks lain) dengan field: "
             '"score" (angka 0-100, skor keseluruhan), '
-            '"feedback" (string berisi feedback keseluruhan 2-3 kalimat), '
+            '"feedback" (string berisi feedback keseluruhan 2-3 kalimat merujuk hal spesifik dari transkrip), '
             '"criteria" (array objek dengan field: '
             '"name" string nama kriteria, '
             '"score" angka 0 hingga maxScore, '
             '"maxScore" angka 5, '
-            '"feedback" string 2-4 kalimat menjelaskan penilaian dengan referensi ke perilaku spesifik peserta), '
-            '"strengths" (array string, 2-4 kekuatan spesifik peserta), '
+            '"feedback" string 2-4 kalimat menjelaskan penilaian dengan mengutip atau merujuk perilaku spesifik peserta di transkrip), '
+            '"strengths" (array string, 2-4 kekuatan spesifik yang muncul di transkrip), '
             '"improvements" (array string, 2-4 area yang perlu diperbaiki dengan saran konkret).'
         )
 
