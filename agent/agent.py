@@ -127,7 +127,10 @@ def _build_elevenlabs_session(voice_id: str) -> AgentSession:
     )
 
 
-server = AgentServer()
+# shutdown_process_timeout gives the shutdown callback (assessment generation)
+# enough time to finish before the worker process is killed. Default is 10s
+# which is too short for LLM-based assessments — bump to 120s.
+server = AgentServer(shutdown_process_timeout=120.0)
 
 
 @server.rtc_session(agent_name=AGENT_NAME)
