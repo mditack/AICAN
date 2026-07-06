@@ -309,24 +309,37 @@ async def my_agent(ctx: agents.JobContext):
         )
 
         async def _call_llm_once() -> str:
-            llm = google.LLM(model="gemini-2.5-flash", temperature=0.7)
-            from livekit.agents.llm import ChatContext
+            # Call Gemini directly. gemini-2.5-flash was returning 504
+            # DEADLINE_EXCEEDED consistently on this prompt shape; the -lite
+            # variant is faster and thinking_budget=0 disables the slow
+            # reasoning path we don't need for structured assessment output.
+            from google import genai
+            from google.genai import types as gtypes
 
-            chat_ctx = ChatContext()
-            chat_ctx.add_message(role="user", content=assessment_prompt)
-            stream = llm.chat(chat_ctx=chat_ctx)
+            client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY", ""))
+            config = gtypes.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.7,
+                thinking_config=gtypes.ThinkingConfig(thinking_budget=0),
+            )
 
-            response_text = ""
-            async for text_chunk in stream.to_str_iterable():
-                response_text += text_chunk
-            return response_text
+            def _sync_call() -> str:
+                resp = client.models.generate_content(
+                    model="gemini-2.5-flash-lite",
+                    contents=assessment_prompt,
+                    config=config,
+                )
+                return resp.text or ""
+
+            return await asyncio.to_thread(_sync_call)
 
         response_text = ""
         last_err: Exception | None = None
         for attempt in range(3):
             try:
-                response_text = await asyncio.wait_for(_call_llm_once(), timeout=20)
-                break
+                response_text = await asyncio.wait_for(_call_llm_once(), timeout=30)
+                if response_text.strip():
+                    break
             except Exception as e:
                 last_err = e
                 logger.warning("LLM assessment attempt %s failed: %s", attempt + 1, e)
