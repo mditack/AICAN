@@ -31,6 +31,8 @@ DEFAULT_TTS_PROVIDER = os.getenv("DEFAULT_TTS_PROVIDER", "gemini")
 UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "")
 UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 
+INITIAL_TRIGGER_TEXT = "[SYSTEM] Mulai sesi sekarang. Sapa lawan bicara sesuai instruksi."
+
 
 def _extract_scenario_from_metadata(metadata: dict) -> dict | None:
     """Extract scenario prompts embedded directly in participant metadata."""
@@ -218,6 +220,31 @@ async def my_agent(ctx: agents.JobContext):
         ),
     )
 
+    # Kick off the agent so it speaks first instead of waiting for user audio.
+    # gemini-3.1-flash-live-preview ignores generate_reply, so send a hidden
+    # trigger message directly on the realtime channel. The trigger phrase is
+    # filtered out of the transcript before assessment.
+    async def _kick_off_agent():
+        try:
+            await asyncio.sleep(0.8)
+            rt = session._activity.realtime_llm_session if session._activity else None
+            if rt is None:
+                logger.warning("Realtime session not available for initial trigger")
+                return
+            from google.genai import types as gtypes
+            trigger = gtypes.Content(
+                parts=[gtypes.Part(text=INITIAL_TRIGGER_TEXT)],
+                role="user",
+            )
+            rt._send_client_event(
+                gtypes.LiveClientContent(turns=[trigger], turn_complete=True)
+            )
+            logger.info("Initial trigger sent to agent")
+        except Exception as e:
+            logger.warning("Failed to send initial trigger: %s", e)
+
+    asyncio.create_task(_kick_off_agent())
+
     # Generate assessment and store directly in Redis on participant disconnect
     async def _generate_and_post_assessment():
         logger.info("Generating text assessment via Gemini LLM...")
@@ -231,13 +258,17 @@ async def my_agent(ctx: agents.JobContext):
                 text_content = getattr(item, "text_content", None)
                 if not role or not text_content:
                     continue
+                clean_text = text_content.strip()
+                # Skip the hidden session-start trigger — it isn't real user speech
+                if clean_text == INITIAL_TRIGGER_TEXT:
+                    continue
                 if role == "user":
                     speaker = "Peserta"
                 elif role in ("assistant", "model"):
                     speaker = "Agen"
                 else:
                     continue
-                transcript_lines.append(f"{speaker}: {text_content.strip()}")
+                transcript_lines.append(f"{speaker}: {clean_text}")
         except Exception as e:
             logger.warning("Failed to read chat history: %s", e)
 
