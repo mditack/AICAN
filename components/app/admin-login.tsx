@@ -43,7 +43,9 @@ export function AdminLogin() {
           </div>
           <div className="text-center">
             <h1 className="text-foreground text-xl font-bold">Admin AICAN</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Masukkan password untuk melanjutkan</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Masukkan password untuk melanjutkan
+            </p>
           </div>
         </div>
 
@@ -72,9 +74,7 @@ export function AdminLogin() {
             </button>
           </div>
 
-          {error && (
-            <p className="text-destructive text-sm">{error}</p>
-          )}
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <button
             type="submit"

@@ -16,7 +16,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="bg-background min-h-svh">
       <nav className="border-border bg-card fixed top-0 z-50 w-full border-b">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
-          <Link href="/admin/scenarios" className="text-foreground text-sm font-bold tracking-tight">
+          <Link
+            href="/admin/scenarios"
+            className="text-foreground text-sm font-bold tracking-tight"
+          >
             AICAN
           </Link>
           <div className="flex flex-1 gap-4">
