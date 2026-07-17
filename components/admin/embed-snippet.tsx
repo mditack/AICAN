@@ -26,7 +26,6 @@ function extractStyle(text: string): string {
 }
 
 export function EmbedSnippet({ scenarioId }: EmbedSnippetProps) {
-  const [origin, setOrigin] = useState('');
   const [snippetText, setSnippetText] = useState('');
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -36,7 +35,6 @@ export function EmbedSnippet({ scenarioId }: EmbedSnippetProps) {
 
   useEffect(() => {
     const o = window.location.origin;
-    setOrigin(o);
     if (!initializedRef.current) {
       setSnippetText(buildSnippet(`${o}/?scenario=${scenarioId}`));
       initializedRef.current = true;
