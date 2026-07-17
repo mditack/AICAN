@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
 import { Microphone, SpinnerGap } from '@phosphor-icons/react';
 import { ScenarioCard } from '@/components/app/scenario-card';
@@ -53,29 +54,53 @@ export const WelcomeView = ({
   avatarEnabledRef,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
+  const searchParams = useSearchParams();
+  // Embeds pin a single scenario via ?scenario=<id> (see the embed snippet on
+  // the admin scenario page), which hides the picker and auto-selects it.
+  const pinnedId = searchParams.get('scenario');
+
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadingScenarios, setLoadingScenarios] = useState(true);
+  const [pinnedMissing, setPinnedMissing] = useState(false);
 
   const loadScenarios = useCallback(async () => {
     try {
       const res = await fetch('/api/scenarios?active=true', { cache: 'no-store' });
       if (res.ok) {
         const data: Scenario[] = await res.json();
-        setScenarios(data);
-        if (data.length === 1) {
-          setSelectedId(data[0].id);
+        // A pinned id that matches nothing must not silently fall back to the
+        // default character — an embed would then teach the wrong scenario.
+        const visible = pinnedId ? data.filter((s) => s.id === pinnedId) : data;
+        setPinnedMissing(Boolean(pinnedId) && visible.length === 0);
+        setScenarios(visible);
+        if (visible.length === 1) {
+          setSelectedId(visible[0].id);
         }
       }
     } finally {
       setLoadingScenarios(false);
     }
-  }, []);
+  }, [pinnedId]);
 
   useEffect(() => {
     avatarEnabledRef.current = false;
     loadScenarios();
   }, [avatarEnabledRef, loadScenarios]);
+
+  // Hide the site header when embedded via ?scenario= so the iframe is clean.
+  useEffect(() => {
+    const header = document.getElementById('app-header');
+    if (!header) return;
+    if (pinnedId) {
+      header.style.display = 'none';
+    }
+    return () => {
+      header.style.display = '';
+    };
+  }, [pinnedId]);
+
+  const pinnedScenario = pinnedId ? (scenarios[0] ?? null) : null;
 
   const handleStart = () => {
     onStartCall(selectedId ?? undefined);
@@ -97,20 +122,31 @@ export const WelcomeView = ({
           variants={staggerItem}
           className="text-foreground text-2xl font-bold tracking-tight md:text-3xl"
         >
-          Roleplay dengan AICAN
+          {pinnedScenario ? pinnedScenario.name : 'Roleplay dengan AICAN'}
         </motion.h1>
 
         <motion.p
           variants={staggerItem}
           className="text-muted-foreground mt-2 max-w-xs text-sm leading-relaxed md:text-base"
         >
-          {scenarios.length > 0
-            ? 'Pilih skenario roleplay lalu mulai percakapan'
-            : 'Mulai percakapan dengan AI companion Anda'}
+          {pinnedScenario
+            ? pinnedScenario.description || 'Tekan tombol di bawah untuk memulai roleplay'
+            : scenarios.length > 0
+              ? 'Pilih skenario roleplay lalu mulai percakapan'
+              : 'Mulai percakapan dengan AI companion Anda'}
         </motion.p>
 
-        {/* Scenario cards */}
-        {!loadingScenarios && scenarios.length > 0 && (
+        {!loadingScenarios && pinnedMissing && (
+          <motion.p
+            variants={staggerItem}
+            className="text-destructive mt-4 max-w-xs text-sm leading-relaxed"
+          >
+            Skenario tidak ditemukan atau sedang tidak aktif. Hubungi administrator.
+          </motion.p>
+        )}
+
+        {/* Scenario cards — hidden when an embed pins one scenario */}
+        {!loadingScenarios && !pinnedId && scenarios.length > 0 && (
           <motion.div
             variants={staggerItem}
             className="mt-6 grid w-full max-w-md gap-3 sm:grid-cols-2"
@@ -136,7 +172,7 @@ export const WelcomeView = ({
           variants={staggerItem}
           size="lg"
           onClick={handleStart}
-          disabled={scenarios.length > 0 && !selectedId}
+          disabled={pinnedMissing || (scenarios.length > 0 && !selectedId)}
           className="bg-brand shadow-brand-glow hover:bg-brand-light hover:shadow-brand-glow mt-8 w-64 cursor-pointer rounded-full font-mono text-xs font-bold tracking-wider text-white uppercase shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl disabled:opacity-50"
         >
           <Microphone weight="bold" className="mr-1 size-4" />

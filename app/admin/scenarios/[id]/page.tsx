@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, FloppyDisk, SpinnerGap } from '@phosphor-icons/react';
+import { EmbedSnippet } from '@/components/admin/embed-snippet';
 import { VoicePicker } from '@/components/admin/voice-picker';
 import type { TtsProvider } from '@/lib/prompt-defaults';
 import { CATEGORIES } from '@/lib/scenarios';
@@ -169,6 +170,8 @@ export default function EditScenarioPage() {
           onProviderChange={setTtsProvider}
           onVoiceChange={setVoice}
         />
+
+        <EmbedSnippet scenarioId={id} />
 
         <div>
           <label className="text-foreground mb-2 block text-sm font-medium">

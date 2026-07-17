@@ -427,10 +427,15 @@ async def my_agent(ctx: agents.JobContext):
     # Run assessment as a shutdown callback so the job lifecycle waits for it
     # instead of being cancelled by the room closing.
     async def _on_shutdown():
+        # Worst case inside _generate_and_post_assessment: 3 LLM attempts *
+        # 30s + 2 retry sleeps = 92s, then a 10s Redis write = ~102s. This
+        # must stay above that (previously 90s raced the LLM retries and
+        # could cancel the coroutine before the Redis write ever ran, losing
+        # the assessment entirely) and below shutdown_process_timeout (120s).
         try:
-            await asyncio.wait_for(_generate_and_post_assessment(), timeout=90)
+            await asyncio.wait_for(_generate_and_post_assessment(), timeout=110)
         except asyncio.TimeoutError:
-            logger.warning("Assessment shutdown callback timed out after 90s")
+            logger.warning("Assessment shutdown callback timed out after 110s")
         except Exception as e:
             logger.warning("Assessment shutdown callback failed: %s", e)
 

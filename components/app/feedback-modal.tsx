@@ -114,7 +114,10 @@ export function FeedbackModal({ roomName, onClose }: FeedbackModalProps) {
     if (!roomName) return;
 
     let attempts = 0;
-    const maxAttempts = 45;
+    // Backend assessment budget is ~110s (see agent.py _on_shutdown) plus
+    // network overhead, so poll longer than that or we show a false failure
+    // while the assessment is still being written.
+    const maxAttempts = 65;
     let cancelled = false;
 
     const poll = async () => {

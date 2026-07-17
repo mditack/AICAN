@@ -71,7 +71,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           enableSystem
           disableTransitionOnChange
         >
-          <header className="glass-header fixed top-0 left-0 z-50 hidden w-full flex-row items-center justify-between px-6 py-4 md:flex">
+          <header id="app-header" className="glass-header fixed top-0 left-0 z-50 hidden w-full flex-row items-center justify-between px-6 py-4 md:flex">
             <a
               target="_blank"
               rel="noopener noreferrer"
