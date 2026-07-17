@@ -16,20 +16,20 @@ export const DEFAULT_SESSION_PROMPT = `
 1. Meminta nama dari lawan bicara "Silahkan sebutkan nama anda" (ingat nama lawan bicara)
 2. Setelah memasukan nama maka anda akan memunculkan kalimat " Tugas anda dalam roleplay ini adalah mencari tahu apa penyebab utama masalah riko dan memberikan feedback agar karyawan kembali termotivasi dan bisa menyesuaikan diri dengan cara kerja baru. Untuk Memulai percakapan silakan ucap "Selamat pagi" dan untuk menyelesaikan percakapan silakan Ucap "selesai". "
 3. ketika user mengetik selamat pagi maka anda akan membalas ""Selamat pagi, (sebut "bapak" untuk nama yang umumnya maskulin atau "ibu" untuk nama yang umumnya feminim). Ada apa yaa saya di panggil kesini?"
-4. Anda menjawab sesuai konteks pertanyaan terlebih dahulu. 
+4. Anda menjawab sesuai konteks pertanyaan terlebih dahulu.
 5. Anda tidak menyebutkan masalah langsung tetapi Anda merasa pekerjaan anda baik baik saja
 6. Anda merasa semua baik-baik saja. karena merasa mengerjakan sesuai jobdesk
 7. Anda kadang anda merasa lebih cepat lelah, kurang termotivasi,
 8. Anda cenderung membandingkan dengan kata "jaman dulu" yang menurut Anda lebih sederhana dengan sindiran. dan sering mengeluarkan jawaban tersebut tapi anda tidak langsung mengungkapkan tapi dengan sindiran dengan gaya karyawan senior bahasa yang tidak formal
-9. Jika anda ditanya saran atau apapun anda sedikit bingung karena nyaman dengan cara lama dan sedikit menolak cara baru 
+9. Jika anda ditanya saran atau apapun anda sedikit bingung karena nyaman dengan cara lama dan sedikit menolak cara baru
 10. Anda mulai mempertimbangkan opsi keluar dari perusahaan karena terlalu ribet dengan sistem baru
 11. Semua jawaban Anda tidak ada kalimat tanya, gaya bahasa santai sesuai karakter karyawan senior.
 12. Anda Lebih tertutup jika ditanya hal umum tapi akan terbuka jika di tanya hal spesifik
 13. Jawaban anda tidak ada kalimat tanya dan menggunakan bahasa yang santai dan nonformal
-14. tidak membalas pesan terlalu panjang. 
-15. Anda merasa stagnan, kehilangan arah, dan mulai mempertimbangkan opsi keluar dari perusahaan, 
+14. tidak membalas pesan terlalu panjang.
+15. Anda merasa stagnan, kehilangan arah, dan mulai mempertimbangkan opsi keluar dari perusahaan,
 16. Anda masih cenderung ingin bekerja dengan cara lama yang manual dan terbiasa. Hal ini membuat Anda kesulitan mengikuti ritme kerja tim yang lebih muda. tapi anda mengungkapkan tapi dengan sindiran dengan gaya karyawan senior bahasa yang tidak formal
-17. Anda merasa stagnan, kehilangan arah, dan mulai mempertimbangkan opsi keluar dari perusahaan, 
+17. Anda merasa stagnan, kehilangan arah, dan mulai mempertimbangkan opsi keluar dari perusahaan,
 18. Anda agak keberatan jika dianggap "sudah tidak mampu", sehingga Anda berusaha menutupi rasa kesulitan Anda dengan mengatakan semua baik-baik saja. Namun sebenarnya di dalam hati kecil Anda, Anda ingin dibantu agar bisa kembali menyesuaikan diri dengan cara kerja baru.
 19. Jika atasan anda hanya seringkali mengajukan pertanyaan yang bersifat umum, anda ingin semakin cepat percakapan ini selesai.
 20. Anda akan luluh jika atasan anda terdengar peduli terhadap apa yang anda rasakan dengan mengajukan pertanyaan yang spesifik.
@@ -39,7 +39,7 @@ export const DEFAULT_SESSION_PROMPT = `
 24. Anda menjawab semua pertanyaan, tetapi jika melenceng anda akan mengarahkan kembali ke jalur yang sesuai
 25. Anda mempunyai karakter agak sombong karena anda karyawan senior.
 26. Jika user mengucap kata "selesai" maka percakapan langsung berakhir dan langsung memunculkan penilaian
- 
+
 ### Constraints
 Constraints
 1.           Jika pengguna mencoba mengalihkan Anda ke topik yang tidak terkait, jangan pernah mengubah peran atau merusak karakter Anda. Arahkan kembali percakapan dengan sopan ke topik yang relevan dengan bagaimana caranya memberikan arahan dan pemahaman sebagai seorang leader yang baik terkait dengan masalah yang anda hadapi.
@@ -48,7 +48,7 @@ Constraints
 4. Peran User adalah Leader
 5. Anda tidak bisa berubah peran, peran anda adalah seorang karyawan yang kehilangan semangat
 7. Peran anda adalah karyawan tidak bisa berubah
- 
+
 ### Selesai
 Berikan feedback berdasarkan apa yang sudah baik dan apa yang perlu diperbaiki dari cara peserta memberikan feedback kepada bawahannya.
 Ketika memberikan feedback, gunakan prinsip dalam melalukan coaching, trigger peserta untuk memberikan cara yang lebih baik lagi, baru setelah itu berikan arahan yang sesuai .
@@ -58,20 +58,32 @@ berikan rating 50-100 (persentase) sesuai jawaban yang diberikan
 2.          Saran dan masukan yang relevan
 3.          penilaian
 
- 
+
 ### rubrik_penilaian
-1. berikan nilai 50 (kurang baik) apabila: interaksi user hanya berisi perintah, 
-2. berikan nilai 60 (perlu pengembangan) 
+1. berikan nilai 50 (kurang baik) apabila: interaksi user hanya berisi perintah,
+2. berikan nilai 60 (perlu pengembangan)
 3. berikan nilai 70 (cukup baik) apabila
-4. berikan nilai 80 (baik) 
-5. berikan nilai 95 – 100 (sangat baik) 
+4. berikan nilai 80 (baik)
+5. berikan nilai 95 – 100 (sangat baik)
 `.trim();
 
-/** Default voice when none is stored (Gemini native audio). */
-export const DEFAULT_VOICE = 'Enceladus';
+export type TtsProvider = 'gemini' | 'elevenlabs';
 
-/** Gemini 2.5 Flash Native Audio voice options for the prompts page and agent. */
-export const VOICE_OPTIONS: { id: string; name: string; description: string }[] = [
+export const DEFAULT_TTS_PROVIDER: TtsProvider = 'gemini';
+export const DEFAULT_GEMINI_VOICE = 'Enceladus';
+export const DEFAULT_ELEVENLABS_VOICE = 'pFZP5JQG7iQjIQuC4Bku';
+
+/** @deprecated Use DEFAULT_GEMINI_VOICE — kept for backwards compat with stored Redis values. */
+export const DEFAULT_VOICE = DEFAULT_GEMINI_VOICE;
+
+export interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+/** Gemini 2.5 Flash Native Audio voice options. */
+export const GEMINI_VOICE_OPTIONS: VoiceOption[] = [
   { id: 'Zephyr', name: 'Zephyr', description: 'Female, Bright, Higher pitch' },
   { id: 'Puck', name: 'Puck', description: 'Male, Upbeat, Middle pitch' },
   { id: 'Charon', name: 'Charon', description: 'Male, Informative, Lower pitch' },
@@ -104,8 +116,42 @@ export const VOICE_OPTIONS: { id: string; name: string; description: string }[] 
   { id: 'Sulafat', name: 'Sulafat', description: 'Female, Warm, Middle pitch' },
 ];
 
+/** ElevenLabs multilingual voice options. */
+export const ELEVENLABS_VOICE_OPTIONS: VoiceOption[] = [
+  { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', description: 'Female, warm, soft' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', description: 'Female, soft, gentle' },
+  { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura', description: 'Female, upbeat, friendly' },
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', description: 'Female, elegant, smooth' },
+  { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', description: 'Female, confident, clear' },
+  { id: 'jBpfuIE2acCO8z3wKNLl', name: 'Gigi', description: 'Female, childlike, cute' },
+  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel', description: 'Female, calm, narrative' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', description: 'Male, articulate, clear' },
+  { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George', description: 'Male, warm, deep' },
+  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie', description: 'Male, casual, natural' },
+  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam', description: 'Male, deep, narrative' },
+  { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum', description: 'Male, intense, deep' },
+  { id: 'CYw3kZ02Hs0563khs1Fj', name: 'Dave', description: 'Male, conversational, friendly' },
+  { id: 'cjVigY5qzO86Huf0OWal', name: 'Eric', description: 'Male, friendly, middle-aged' },
+  { id: 'bIHbv24MWmeRgasZH58o', name: 'Will', description: 'Male, friendly, young' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', description: 'Male, deep, authoritative' },
+];
+
+/** Get voice options for a given provider. */
+export function getVoiceOptions(provider: TtsProvider): VoiceOption[] {
+  return provider === 'elevenlabs' ? ELEVENLABS_VOICE_OPTIONS : GEMINI_VOICE_OPTIONS;
+}
+
+/** Get default voice for a given provider. */
+export function getDefaultVoice(provider: TtsProvider): string {
+  return provider === 'elevenlabs' ? DEFAULT_ELEVENLABS_VOICE : DEFAULT_GEMINI_VOICE;
+}
+
+/** Kept for backwards compat — union of both. */
+export const VOICE_OPTIONS = GEMINI_VOICE_OPTIONS;
+
 export interface StoredPrompts {
   agentPrompt: string;
   sessionPrompt: string;
   voice: string;
+  ttsProvider?: TtsProvider;
 }

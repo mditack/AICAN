@@ -92,6 +92,7 @@ export function getStyles(appConfig: AppConfig) {
 
 export type ConnectionOptions = {
   avatarEnabled?: boolean;
+  scenarioId?: string;
 };
 
 /**
@@ -121,6 +122,7 @@ export function getSandboxTokenSource(appConfig: AppConfig, getOptions?: () => C
         body: JSON.stringify({
           room_config: roomConfig,
           avatar_enabled: options.avatarEnabled,
+          scenarioId: options.scenarioId,
         }),
       });
       return await res.json();
@@ -145,6 +147,7 @@ export function getLocalConnectionTokenSource(
     const options = getOptions?.() ?? {};
     const body: Record<string, unknown> = {
       avatar_enabled: options.avatarEnabled,
+      scenarioId: options.scenarioId,
     };
     if (appConfig.agentName) {
       body.room_config = { agents: [{ agent_name: appConfig.agentName }] };

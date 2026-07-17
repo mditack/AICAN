@@ -27,9 +27,13 @@ interface AppProps {
 
 export function App({ appConfig }: AppProps) {
   const avatarEnabledRef = useRef(true);
+  const scenarioIdRef = useRef<string | undefined>(undefined);
 
   const tokenSource = useMemo(() => {
-    const getOptions = () => ({ avatarEnabled: avatarEnabledRef.current });
+    const getOptions = () => ({
+      avatarEnabled: avatarEnabledRef.current,
+      scenarioId: scenarioIdRef.current,
+    });
     return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
       ? getSandboxTokenSource(appConfig, getOptions)
       : getLocalConnectionTokenSource(appConfig, getOptions);
@@ -44,7 +48,13 @@ export function App({ appConfig }: AppProps) {
     <AgentSessionProvider session={session}>
       <AppSetup />
       <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} avatarEnabledRef={avatarEnabledRef} />
+        <ViewController
+          appConfig={appConfig}
+          avatarEnabledRef={avatarEnabledRef}
+          onSelectScenario={(id) => {
+            scenarioIdRef.current = id;
+          }}
+        />
       </main>
       <StartAudioButton label="Start Audio" />
       <Toaster
