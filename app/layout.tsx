@@ -88,12 +88,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               />
             </a>
             <nav className="flex items-center gap-4">
-              <a
-                href="/prompts"
-                className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-              >
-                Edit prompts
-              </a>
               <ThemeToggle bordered={false} showSystem={true} />
             </nav>
           </header>
